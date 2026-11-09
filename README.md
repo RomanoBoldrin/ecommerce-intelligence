@@ -1,155 +1,248 @@
 # Merchant Pulse
 
-**E-Commerce Intelligence and Data Analytics Platform**
+**E-commerce Intelligence Dashboard for Small Businesses**
 
-Projeto Integrador IV — UNIVESP  
-Turma 002
+> Version 0.3 — Project documentation and implementation baseline
 
-## 1. Project Overview
+Merchant Pulse is a data analytics application designed to help small e-commerce businesses understand their customers' purchase journeys, identify conversion bottlenecks, monitor operational conditions, and make more informed decisions.
 
-Merchant Pulse is an e-commerce intelligence platform designed to transform large-scale e-commerce and IoT data into useful information for business decision-making.
+The application consolidates e-commerce navigation and sales data into an interactive dashboard. It also includes a simulated IoT telemetry pipeline and a machine-learning module for product-category demand forecasting.
 
-The project implements an end-to-end data pipeline, covering data acquisition, ingestion, preprocessing, storage, analytical processing, machine learning, and interactive visualization.
+## Project objectives
 
-The platform is intended to help small e-commerce businesses understand customer behavior, evaluate product performance, identify weaknesses in the sales funnel, and discover patterns that can support better business decisions.
+The project aims to:
 
-Merchant Pulse is an analytical and decision-support application. It is not intended to replace an e-commerce platform or operate a complete online store.
+- Consolidate e-commerce navigation events, products, and orders into an analytical data structure.
+- Present the five main stages of the purchase journey: store visit, product view, cart addition, checkout initiation, and completed order.
+- Calculate meaningful indicators such as conversion, checkout abandonment, revenue, and average order value.
+- Identify product and category performance patterns.
+- Apply reproducible data preprocessing and exploratory statistical analysis.
+- Train and evaluate a supervised machine-learning model for demand forecasting.
+- Ingest and analyze simulated IoT telemetry.
+- Provide an interactive web interface suitable for non-technical business users.
 
-## 2. Academic Objective
+## Project scope
 
-The project addresses the PI-IV academic objective:
+Merchant Pulse is an **analytics and decision-support application**, not an e-commerce platform.
 
-> Desenvolver análise de dados em escala utilizando algum conjunto de dados existentes ou capturados por IoT e aprendizagem de máquina. Preparar uma interface para visualização dos resultados.
+It does not replace the partner's sales platform, process payments, manage orders operationally, or provide inventory management.
 
-The project must satisfy the technical requirements of both participating academic tracks:
+The initial demonstration uses one store. The underlying data model retains a simple store relationship so the application can represent additional stores without introducing a complex SaaS or multi-tenant architecture.
 
-- **Data Science:** large-scale data analysis, systematic preprocessing, machine learning implementation, and model evaluation.
-- **Computer Engineering:** IoT data capture or ingestion, software integration, data storage, and a functional application interface.
+### Main application modules
 
-Physical IoT devices are not mandatory. Software-simulated telemetry or suitable public IoT datasets are valid acquisition sources.
+| Module                  | Purpose                                                                     |
+| ----------------------- | --------------------------------------------------------------------------- |
+| Overview                | Main business indicators, trends, funnel summary, and recommendations       |
+| Sales Funnel            | Five-stage purchase journey and conversion losses                           |
+| Products & Performance  | Product and category performance, with optional read-only stock information |
+| Product Detail          | Detailed navigation and sales indicators for a selected product             |
+| Customer Behavior       | Navigation patterns by day, hour, device, and traffic source                |
+| Data Sources & Pipeline | Data imports, processing status, and data-quality reports                   |
+| IoT Monitoring          | Warehouse temperature, humidity, and energy telemetry                       |
+| Demand Forecasting      | Category-level daily demand predictions and model evaluation                |
+| Settings                | Store configuration, dashboard users, targets, and data-source settings     |
 
-## 3. Core Deliverables
+Global filters include date range and product category where applicable. Exports must respect the active filters and must not expose consumer personal information.
 
-The project must demonstrate all of the following:
+## Data strategy
 
-1. **Data acquisition:** obtain e-commerce datasets and IoT telemetry through documented sources or a simulator.
-2. **Data at scale:** process datasets with sufficient volume and complexity to demonstrate meaningful data-engineering and analytical techniques.
-3. **Data preprocessing:** clean, validate, normalize, deduplicate, and document the treatment of data.
-4. **Statistical analysis:** classify variables correctly and apply statistically valid methods.
-5. **Machine learning:** train and evaluate at least one model suitable for a clearly defined analytical objective.
-6. **IoT integration:** ingest telemetry independently from e-commerce navigation and transaction data.
-7. **Interactive visualization:** provide a functional web application through which users can explore results dynamically.
-8. **Academic evidence:** document methodology, experiments, metrics, limitations, and results.
+### E-commerce data
 
-Static reports or notebook outputs alone do not satisfy the software-interface requirement.
+The initial dataset is generated programmatically using Python. It represents a coherent, simulated e-commerce operation and is intended for reproducible development, analysis, testing, and demonstration.
 
-## 4. Main Functional Areas
+The generator should produce related records for:
 
-- **Overview:** business KPIs, period comparisons, sales funnel, revenue trends, product performance, and recommendations.
-- **Sales Funnel:** customer journey stages, conversion losses, and breakdowns by device and traffic source.
-- **Products & Stock Indicators:** product and category performance, sales, views, cart additions, and minimum-stock alerts.
-- **Product Details:** individual product performance and related recommendations.
-- **Customer Behavior:** session patterns, time-of-day and day-of-week distributions, devices, traffic sources, and new versus returning visitors.
-- **IoT Analytics:** telemetry trends, device or source selection, sensor measurements, and data-quality indicators.
-- **Machine Learning:** model performance, experiment results, and interactive predictions where supported by the selected model.
-- **Settings:** stores, users, data sources, imports, targets, and alerts.
+- Products and categories
+- Visitor sessions
+- Navigation events
+- Orders and order items
+- Devices and traffic sources
+- Promotions and seasonal demand patterns
 
-## 5. Technology Stack
+The initial planning target is approximately two years of activity, with indicative volumes of:
+
+- 300,000–500,000 visitor sessions
+- 2–5 million navigation events
+- 50,000–100,000 orders
+- 100–200 products
+
+These are engineering targets, not guaranteed record counts. Final volumes must remain internally consistent and should be adjusted after performance benchmarking.
+
+The generator must use a fixed random seed by default, support configurable generation parameters, preserve relationships between records, and write data in batches.
+
+**Data provenance:** generated e-commerce records are synthetic. They must not be described as real transactions or as data collected from the partner company.
+
+### IoT telemetry
+
+The project uses a software simulator for warehouse environmental and operational monitoring. No physical sensor is required.
+
+The initial simulation covers:
+
+- Temperature, in degrees Celsius
+- Relative humidity, in percent
+- Energy consumption, in kilowatts
+
+The baseline configuration is 10 simulated devices, one reading every five minutes, over 180 days:
+
+\[
+10 \times 12 \times 24 \times 180 = 518{,}400
+\]
+
+This provides a substantial telemetry dataset while keeping the first implementation manageable. The simulator must generate timestamps, device identifiers, plausible variations, and occasional abnormal readings.
+
+**Data provenance:** IoT readings are simulated and do not represent measurements from a physical warehouse.
+
+## Machine learning
+
+Machine learning is part of the project's analytical scope.
+
+The selected task is **supervised regression for daily demand forecasting by product category**.
+
+The target is the number of units sold in a category on a given day. The model will use historical sales and calendar information to forecast future demand.
+
+The proposed main model is `HistGradientBoostingRegressor` from scikit-learn. Its results must be compared with a seasonal-naive baseline that uses the corresponding day from the previous week.
+
+Evaluation uses a chronological training, validation, and test split, with MAE, RMSE, and R². Model performance must be interpreted alongside the baseline and checked for overfitting and underfitting.
+
+Predictions must be generated from the documented model pipeline. The dashboard must not present precomputed results as live predictions.
+
+## Data science requirements
+
+The data-science workflow must include:
+
+1. Data ingestion and structural validation.
+2. Missing-value inspection and treatment.
+3. Duplicate detection and removal.
+4. Detection of inconsistent and impossible values.
+5. Classification of variables by measurement scale.
+6. Transformation and feature engineering.
+7. Quality validation and reproducible analysis.
+
+Variables must be classified before applying statistical methods:
+
+- **Qualitative nominal:** categories without an intrinsic order. Use frequencies, proportions, and mode.
+- **Qualitative ordinal:** categories with a meaningful order. Use frequencies and appropriate ordinal summaries.
+- **Quantitative interval or ratio:** numerical measurements for which numerical summaries are meaningful.
+
+Nominal identifiers and category labels must never be treated as continuous measurements merely because they are stored as numbers.
+
+Large datasets must be generated and processed in batches or chunks where appropriate. The project should document memory-management decisions, processing volumes, and any justified sampling.
+
+## Technology stack
 
 ### Web application
 
-- Next.js — Pages Router
 - JavaScript
+- Next.js — Pages Router
 - React
 - Tailwind CSS
 - Recharts
-- Next.js API Routes
-
-### Database and persistence
-
+- Prisma ORM
 - PostgreSQL
 - NeonDB
-- Prisma ORM
+- Vercel
 
-### Data science and processing
+### Data science
 
 - Python
-- Pandas or another justified tabular-processing library
-- Scikit-learn or another justified machine-learning framework
-- Jupyter notebooks for experimentation and academic evidence
-- Reproducible Python scripts for repeatable processing
+- Pandas
+- NumPy
+- scikit-learn
+- CSV and/or Parquet for intermediate datasets
 
-### Testing and deployment
+### Testing
 
-- Jest
-- Vercel
-- Git and GitHub
+- Jest for JavaScript application and API tests
+- Python tests for generators, preprocessing, feature engineering, and model evaluation
 
-Additional libraries must be introduced only when they solve a concrete project requirement.
+The Python workspace is responsible for data generation, preprocessing, analysis, model training, and evaluation. The Next.js application provides the interactive interface and application API.
 
-## 6. Logical Architecture
+## Architecture
 
-Merchant Pulse is organized into four main layers:
+The solution is organized as a modular monolith:
 
-1. **Data Sources:** e-commerce exports, synthetic e-commerce datasets, APIs where available, and simulated or public IoT telemetry.
-2. **Data Processing:** ingestion, validation, cleaning, normalization, deduplication, transformation, and feature preparation.
-3. **Analytics and Intelligence:** statistical analysis, business indicators, recommendations, and machine-learning models.
-4. **Visualization:** interactive dashboards, charts, filters, alerts, and model results.
+1. Data sources and generation
+2. Data processing and ingestion
+3. Analytics and machine-learning outputs
+4. Interactive visualization
 
-The web application and Python data-science tooling have distinct responsibilities but belong to one coherent project.
+The web application and its API routes are deployed through Vercel. PostgreSQL is the persistent data store. Python scripts run as explicit data-science and simulation workflows rather than as permanent background services.
 
-## 7. Data Sources
+The initial IoT ingestion path uses HTTP requests to a Next.js API route. A message broker or streaming platform is not required for the first implementation.
 
-The project may use:
+## Privacy and security
 
-- Public or authorized e-commerce datasets.
-- Synthetic e-commerce data for development and demonstration.
-- Simulated IoT telemetry generated by a software component.
-- Public IoT time-series datasets, if appropriate.
+- Do not store or display consumer names, emails, telephone numbers, or addresses.
+- Use pseudonymous hashes for visitor and customer identifiers where needed.
+- Treat hashes as pseudonymous data, not as a guarantee of anonymization.
+- Keep dashboard authentication separate from visitor tracking.
+- Store only hashed authentication tokens.
+- Apply store scoping to application queries.
+- Restrict administrative settings to authorized roles.
+- Ensure exports exclude consumer personal information.
 
-The final academic dataset must be sufficiently large and complex. A small development fixture is not a substitute for the dataset used to demonstrate the final pipeline.
+## Repository structure
 
-Dataset selection, volume, provenance, licensing, and processing strategy must be documented before final implementation.
+```text
+merchant-pulse/
+├── src/
+│   ├── components/
+│   ├── features/
+│   ├── pages/
+│   │   └── api/
+│   ├── lib/
+│   └── styles/
+├── prisma/
+│   ├── schema.prisma
+│   └── migrations/
+├── data-science/
+│   ├── generators/
+│   ├── simulators/
+│   ├── preprocessing/
+│   ├── analysis/
+│   ├── features/
+│   ├── models/
+│   ├── evaluation/
+│   ├── notebooks/
+│   └── tests/
+├── docs/
+│   ├── PROJECT_SPEC.md
+│   ├── ARCHITECTURE.md
+│   ├── DATA_MODEL.md
+│   └── ROADMAP.md
+├── tests/
+├── AGENTS.md
+├── README.md
+└── package.json
+```
 
-## 8. Data Privacy
+The structure is a target organization. It may evolve as implementation reveals better boundaries, provided the architecture and project scope remain consistent.
 
-Consumer information must be anonymized or pseudonymized before entering the analytical pipeline.
+## Development principles
 
-The application must not store consumer names, email addresses, telephone numbers, CPF numbers, or full addresses as part of its analytical dataset.
+- Prefer simple, maintainable solutions over unnecessary infrastructure.
+- Use JavaScript rather than introducing TypeScript without a clear need.
+- Keep the Next.js Pages Router.
+- Avoid microservices and permanent workers for the initial version.
+- Keep the Python data-science workflow separate from the web application code.
+- Make data generation and preprocessing reproducible.
+- Validate analytical definitions before implementing visualizations.
+- Do not fabricate model metrics, validation results, or business outcomes.
+- Keep documentation aligned with the actual implementation.
 
-Hashed identifiers may be used to associate sessions and identify returning visitors, but hashes are pseudonymous identifiers—not a guarantee of irreversible anonymization. The implementation must avoid storing raw identifiers and must protect any secret used to generate keyed hashes.
+## Academic context
 
-Dashboard users are authenticated separately from e-commerce visitors.
+Merchant Pulse is developed as a UNIVESP Projeto Integrador IV project for the Data Science and Computer Engineering tracks.
 
-## 9. Project Scope
+The academic report establishes the problem context, the five-stage purchase journey, the small-business decision-support objective, and the importance of privacy and usability. The expanded technical implementation described in this repository adds reproducible large-scale data processing, supervised machine learning, and simulated IoT telemetry.
 
-Included:
+The use of synthetic and simulated data must be disclosed in technical documentation and academic reporting. Results obtained from these datasets demonstrate the system's analytical workflow; they do not establish real-world improvements in a partner company's revenue or conversion.
 
-- Multi-store-capable analytical data model.
-- Dashboard authentication and access profiles.
-- CSV ingestion and import history.
-- E-commerce event and order analysis.
-- Product and category performance.
-- Limited stock-level indicators and alerts.
-- Independent IoT telemetry ingestion and analysis.
-- Statistical analysis and preprocessing.
-- Machine-learning experimentation and evaluation.
-- Rule-based business recommendations.
-- Interactive visualization and data export.
+## Documentation
 
-Excluded unless explicitly approved later:
-
-- Building a complete e-commerce storefront.
-- Payment processing.
-- Consumer accounts and consumer authentication.
-- Full inventory operations, purchasing, or warehouse management.
-- Physical IoT hardware as a mandatory dependency.
-- Microservices and distributed infrastructure without a demonstrated need.
-
-## 10. Project Status
-
-This documentation defines the Version 0.2 planning baseline.
-
-The architecture and data model are proposed engineering decisions informed by the academic requirements and the collaborator's initial relational model. They are not a claim that implementation is complete.
-
-Dataset selection, exact data volumes, event attribution rules, IoT measurement definitions, and machine-learning objectives remain decisions to be finalized before implementation.
+- [`docs/PROJECT_SPEC.md`](docs/PROJECT_SPEC.md) — Functional scope, requirements, and analytical definitions.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — Application architecture and data flows.
+- [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — Data entities, relationships, and metric semantics.
+- [`AGENTS.md`](AGENTS.md) — Instructions for AI coding agents.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — Implementation phases and completion criteria.

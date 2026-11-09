@@ -1,406 +1,451 @@
 # Merchant Pulse — Architecture
 
-**Version:** 0.2
+**Version:** 0.3
 
-## 1. Architectural Goals
+## 1. Architectural goals
 
-The architecture must support:
+Merchant Pulse uses a modular monolith architecture with a separate Python data-science workspace.
 
-- A complete data pipeline.
-- E-commerce and IoT ingestion.
-- Large-scale preprocessing and analysis.
-- Machine-learning experimentation and evaluation.
-- Interactive business dashboards.
-- Maintainability by a small academic team.
-- Deployment with the selected technology stack.
+The architecture is designed to:
 
-The architecture should remain as simple as possible without compromising the academic requirements.
+- Keep the web application straightforward to develop and deploy.
+- Separate application concerns from data-science workflows.
+- Support reproducible data generation and processing.
+- Persist analytical source data and telemetry in PostgreSQL.
+- Provide interactive analytics through a web interface.
+- Avoid unnecessary infrastructure and operational complexity.
 
-## 2. Architecture Style
+The initial release does not require microservices, Kafka, Redis, MQTT brokers, permanent background workers, or a separate Express server.
 
-Use a **modular monolith** for the application, complemented by a Python data-science workspace.
-
-The web application remains one Next.js project with logically separated modules. PostgreSQL is the central persistent database.
-
-Python scripts and notebooks handle data-science workflows that are not appropriate to implement inside request/response web handlers.
-
-This is not a microservices architecture.
-
-## 3. Technology Responsibilities
-
-| Technology           | Responsibility                                 |
-| -------------------- | ---------------------------------------------- |
-| Next.js Pages Router | Web application and API Routes                 |
-| JavaScript           | Application implementation                     |
-| React                | Interactive interface                          |
-| Tailwind CSS         | Styling                                        |
-| Recharts             | Dashboard charts                               |
-| Prisma               | Database access and migrations                 |
-| PostgreSQL / NeonDB  | Persistent data                                |
-| Python               | Data preparation, analysis, and ML             |
-| Pandas               | Tabular processing where appropriate           |
-| Scikit-learn         | Machine-learning experiments where appropriate |
-| Jest                 | JavaScript unit and integration tests          |
-| Vercel               | Web application deployment                     |
-
-Python dependencies should be managed independently from the Node.js dependencies.
-
-Do not add a second application backend or GUI framework without a clear requirement. The Next.js dashboard is the primary GUI. Python is the data-science execution environment.
-
-## 4. Logical Architecture
+## 2. High-level architecture
 
 ```mermaid
-flowchart TD
-    A["Data Sources"]
-    A1["E-commerce CSV / API"]
-    A2["Synthetic E-commerce Data"]
-    A3["IoT Simulator / Public IoT Dataset"]
+flowchart TB
+    subgraph Sources["Data Sources"]
+        EG["Python E-commerce Generator"]
+        IS["Python IoT Simulator"]
+        EXT["Authorized External Data Imports"]
+    end
 
-    B["Acquisition and Ingestion"]
-    C["Raw Data"]
-    D["Validation and Preprocessing"]
-    E["Cleaned / Processed Data"]
-    F["Feature Engineering"]
-    G["Analytics and Machine Learning"]
-    H["PostgreSQL / NeonDB"]
-    I["Next.js API Routes"]
-    J["Interactive Dashboard"]
+    subgraph DS["Python Data Science Workspace"]
+        GEN["Generation and Simulation"]
+        PRE["Preprocessing and Validation"]
+        ANA["Exploratory and Statistical Analysis"]
+        FE["Feature Engineering"]
+        ML["Model Training and Evaluation"]
+        OUT["Processed Data and Model Artifacts"]
+    end
 
-    A --> A1
-    A --> A2
-    A --> A3
-    A1 --> B
-    A2 --> B
-    A3 --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    E --> H
-    G --> H
-    H --> I
-    I --> J
+    subgraph APP["Next.js Application — Pages Router"]
+        UI["Interactive Dashboard"]
+        API["Next.js API Routes"]
+        AUTH["Authentication and Authorization"]
+        ING["Import and IoT Ingestion"]
+        QRY["Analytics Queries"]
+    end
+
+    DB[("PostgreSQL / NeonDB")]
+
+    EG --> GEN
+    IS --> GEN
+    EXT --> PRE
+    GEN --> PRE
+    PRE --> ANA
+    PRE --> FE
+    FE --> ML
+    ML --> OUT
+    PRE --> OUT
+
+    OUT --> DB
+    IS --> ING
+    UI <--> API
+    API --> AUTH
+    API --> ING
+    API --> QRY
+    ING --> DB
+    QRY --> DB
+    DB --> UI
 ```
 
-This is a logical flow, not a requirement to store every intermediate dataset in PostgreSQL. Large raw files and intermediate analytical artifacts may remain in a file-based data workspace when appropriate.
+The Python workspace performs data-science operations. The Next.js application handles user interaction, authentication, API requests, persistence access, and presentation.
 
-## 5. Web Application Modules
+## 3. Technology stack
 
-Suggested application structure:
+### Web application
+
+| Technology           | Responsibility                        |
+| -------------------- | ------------------------------------- |
+| JavaScript           | Application language                  |
+| Next.js Pages Router | Web application and API routes        |
+| React                | Interface components                  |
+| Tailwind CSS         | Styling and responsive layout         |
+| Recharts             | Interactive analytical charts         |
+| Prisma ORM           | Database access and schema management |
+| PostgreSQL           | Persistent relational storage         |
+| NeonDB               | Managed PostgreSQL hosting            |
+| Vercel               | Application deployment                |
+
+### Data science
+
+| Technology   | Responsibility                             |
+| ------------ | ------------------------------------------ |
+| Python       | Data-science workflows                     |
+| Pandas       | Tabular preprocessing and analysis         |
+| NumPy        | Numerical operations                       |
+| scikit-learn | Regression model and evaluation            |
+| CSV          | Interchange and initial generated datasets |
+| Parquet      | Optional efficient analytical storage      |
+
+### Testing
+
+- Jest for JavaScript modules, API routes, and application behavior.
+- Python tests for generation, preprocessing, feature engineering, and model evaluation.
+
+## 4. Application organization
+
+The Next.js application follows a feature-oriented organization.
 
 ```text
 src/
-  pages/
-    index.js
-    login.js
-    dashboard/
-      index.js
-      funnel.js
-      products/
-        index.js
-        [id].js
-      behavior.js
-      iot.js
-      machine-learning.js
-      settings/
-        index.js
-        sources.js
-        users.js
-        targets.js
-        stores.js
-    api/
-      auth/
-      analytics/
-      imports/
-      iot/
-      recommendations/
-      machine-learning/
-  components/
-    layout/
-    dashboard/
-    charts/
-    metrics/
-    forms/
-    ui/
-  services/
-    auth/
-    analytics/
-    imports/
-    recommendations/
-    iot/
-    machine-learning/
-  lib/
-    prisma.js
-    validation/
-    constants/
-  utils/
-    dates/
-    analytics/
-    formatting/
-  styles/
+├── components/
+│   ├── layout/
+│   ├── charts/
+│   ├── filters/
+│   └── ui/
+├── features/
+│   ├── overview/
+│   ├── funnel/
+│   ├── products/
+│   ├── behavior/
+│   ├── data-pipeline/
+│   ├── iot/
+│   ├── forecasting/
+│   └── settings/
+├── lib/
+│   ├── auth/
+│   ├── db/
+│   ├── validation/
+│   ├── analytics/
+│   └── exports/
+├── pages/
+│   ├── api/
+│   └── ...
+└── styles/
 ```
 
-Python workspace:
+The exact component and route names may evolve, but feature-specific business logic should remain grouped by domain.
+
+### Responsibilities
+
+**Presentation layer**
+
+- Renders dashboard pages and reusable components.
+- Manages local interface state, filters, and chart interactions.
+- Displays loading, empty, success, and error states.
+- Does not contain authoritative business calculations.
+
+**API layer**
+
+- Receives client requests.
+- Authenticates users where required.
+- Validates input.
+- Applies authorization and store scope.
+- Calls domain and analytics functions.
+- Returns structured responses.
+
+**Domain and analytics layer**
+
+- Defines funnel, revenue, and product-performance calculations.
+- Encapsulates business rules.
+- Applies consistent date and status semantics.
+- Avoids duplicating formulas across pages.
+
+**Persistence layer**
+
+- Uses Prisma for ordinary relational operations.
+- Uses carefully parameterized SQL for analytical queries when necessary.
+- Keeps schema and migration history under version control.
+
+## 5. Python workspace
 
 ```text
 data-science/
-  README.md
-  requirements.txt
-  data/
-    raw/
-    interim/
-    processed/
-    features/
-  notebooks/
-  src/
-    ingestion/
-    preprocessing/
-    analysis/
-    features/
-    models/
-    evaluation/
-  reports/
-  artifacts/
+├── generators/
+│   ├── ecommerce_generator.py
+│   └── generation_config.py
+├── simulators/
+│   ├── warehouse_iot_simulator.py
+│   └── telemetry_config.py
+├── preprocessing/
+│   ├── validation.py
+│   ├── cleaning.py
+│   └── quality_report.py
+├── analysis/
+│   ├── descriptive.py
+│   ├── funnel.py
+│   └── exploratory.py
+├── features/
+│   └── demand_features.py
+├── models/
+│   ├── baseline.py
+│   └── demand_model.py
+├── evaluation/
+│   └── metrics.py
+├── notebooks/
+└── tests/
 ```
 
-Do not commit sensitive datasets, credentials, or large generated artifacts without an explicit repository policy. Document how to obtain or regenerate required data.
+Python scripts must be executable independently and should expose clear configuration parameters.
 
-## 6. Authentication and Sessions
+The generator and simulator should not depend on the Next.js application to produce their source data. Ingestion into the application is a separate operation.
 
-Dashboard authentication is independent of e-commerce visitor tracking.
+## 6. E-commerce data flow
 
-Adapt the established PI-II authentication approach to Merchant Pulse, keeping only relevant concepts:
+1. The generator creates products, sessions, events, orders, and order items.
+2. Generated data is written in batches to CSV or Parquet.
+3. The preprocessing pipeline validates structure and content.
+4. Invalid records are rejected or corrected according to documented rules.
+5. Duplicate records are removed using stable deduplication keys.
+6. Quality reports record accepted, rejected, corrected, and deduplicated counts.
+7. Validated data is loaded into PostgreSQL.
+8. The application queries the stored data through analytics functions.
+9. Dashboard components display the results using interactive charts and tables.
 
-- `User`
-- `AuthSession`
-- `PasswordResetToken`
-- `UserRole`
+### Generator characteristics
 
-Suggested roles:
+The generator must:
+
+- Use a configurable fixed seed.
+- Support configurable start and end dates.
+- Generate consistent product, session, event, and order relationships.
+- Produce plausible purchase journeys and non-conversions.
+- Generate seasonality, promotion effects, and varying demand.
+- Support batch output.
+- Avoid generating unrelated record collections that do not reference one another.
+
+Indicative initial scale:
+
+| Entity            |        Initial target |
+| ----------------- | --------------------: |
+| Products          |               100–200 |
+| Visitor sessions  |       300,000–500,000 |
+| Navigation events |           2–5 million |
+| Orders            |        50,000–100,000 |
+| Activity period   | Approximately 2 years |
+
+The values are targets for benchmarking. They are not hard constraints and must be reconciled with the generated relationships.
+
+## 7. IoT ingestion flow
+
+The IoT simulator generates timestamped measurements and sends them to a Next.js API route over HTTP.
+
+```mermaid
+sequenceDiagram
+    participant SIM as Python IoT Simulator
+    participant API as Next.js API Route
+    participant VAL as Validation
+    participant DB as PostgreSQL
+
+    SIM->>API: POST telemetry batch
+    API->>VAL: Validate device and readings
+    VAL->>VAL: Check fields, timestamps, ranges
+    VAL->>DB: Insert valid readings
+    DB-->>VAL: Persistence result
+    VAL-->>API: Accepted/rejected counts
+    API-->>SIM: HTTP response
+```
+
+### Initial simulation
+
+- 10 devices.
+- Five-minute interval.
+- 180 days.
+- 518,400 readings.
+- Temperature, relative humidity, and energy consumption.
+
+The simulator may send readings individually or in batches. The API must impose a reasonable payload limit and validate every measurement.
+
+A duplicate device/timestamp/measurement combination must not create duplicate telemetry.
+
+### Why HTTP instead of a message broker?
+
+The initial project needs a demonstrable ingestion path, not a production-scale streaming platform. HTTP is sufficient to demonstrate device simulation, validation, ingestion, persistence, and visualization.
+
+MQTT, Kafka, Redis, or other infrastructure may be evaluated later only if a documented requirement justifies it.
+
+## 8. Data processing and memory management
+
+Large datasets must be handled deliberately.
+
+- Generate data in batches rather than building the entire dataset in memory.
+- Use chunked file reading for large CSV inputs.
+- Select only the columns needed for a processing step.
+- Prefer appropriate numeric and categorical data types.
+- Avoid unnecessary copies of large DataFrames.
+- Use database-side aggregation when it reduces data transfer and memory use.
+- Consider Parquet for intermediate data where it improves storage and processing.
+- Record representative execution time and memory consumption.
+
+If sampling is used for exploratory analysis or model development, document the selection method, sample size, and reason. Preserve a distinction between sample-based findings and full-dataset results.
+
+## 9. Machine-learning workflow
+
+The machine-learning pipeline is independent from the interactive dashboard.
+
+```mermaid
+flowchart TD
+    RAW["Validated orders and order items"]
+    AGG["Aggregate daily units sold by category"]
+    FE["Build calendar, lag, and rolling features"]
+    SPLIT["Chronological train / validation / test split"]
+    BASE["Seasonal-naive baseline"]
+    TRAIN["Train HistGradientBoostingRegressor"]
+    TUNE["Evaluate and tune using validation data"]
+    TEST["Final evaluation on held-out test data"]
+    ART["Persist model, metadata, and evaluation results"]
+    DASH["Demand Forecasting dashboard"]
+
+    RAW --> AGG
+    AGG --> FE
+    FE --> SPLIT
+    SPLIT --> BASE
+    SPLIT --> TRAIN
+    TRAIN --> TUNE
+    BASE --> TEST
+    TUNE --> TEST
+    TEST --> ART
+    ART --> DASH
+```
+
+### Target
+
+Daily units sold per product category.
+
+### Candidate features
+
+- Category.
+- Day of week.
+- Month.
+- Weekend indicator.
+- Promotion indicator.
+- Lagged sales at 1, 7, and 14 days.
+- Rolling means at 7 and 28 days.
+
+Feature generation must be time-aware. Rolling windows and lag features must not use future observations.
+
+### Models
+
+- Baseline: same weekday from the previous week.
+- Main candidate: `HistGradientBoostingRegressor`.
+
+### Evaluation
+
+Use a chronological 70% / 15% / 15% split for training, validation, and testing. Compare MAE, RMSE, and R² against the baseline.
+
+Persist enough metadata to identify:
+
+- Model name and version.
+- Training data date range.
+- Feature definitions.
+- Split boundaries.
+- Evaluation metrics.
+- Training configuration.
+
+The application must not report evaluation metrics that have not actually been computed.
+
+## 10. Analytics definitions and query responsibilities
+
+The main analytical calculations should be centralized.
+
+### Funnel
+
+- Count distinct visitor sessions at each stage.
+- Count a stage at most once per session.
+- Enforce chronological stage progression.
+- Attribute the session to its start date.
+- Do not substitute raw event counts for session counts.
+
+### Revenue
+
+- Include only paid, shipped, and delivered orders.
+- Exclude pending, cancelled, and returned orders.
+- Attribute revenue to the order creation date.
+- Keep revenue and funnel session conversion as separate measures.
+
+### Product performance
+
+- Navigation metrics may use events.
+- Sales and revenue metrics must use eligible orders and their items.
+- Product rankings must respect the selected period and store.
+- Do not imply stock-management functionality.
+
+### Timezone
+
+The initial store timezone is `America/Sao_Paulo`. Store timestamps consistently and apply the configured timezone when grouping and displaying business dates.
+
+## 11. Authentication and authorization architecture
+
+Authentication is for dashboard users only. It must not share tables or identifiers with visitor tracking.
+
+The authentication design is adapted from the PI-II implementation:
+
+- `User` stores identity, password hash, role, activity state, and timestamps.
+- `Session` stores a session identifier, token hash, user reference, expiration, and timestamps.
+- `PasswordResetToken` stores a reset token, user reference, expiration, and usage state.
+
+Only the token hash is stored for active sessions. The raw session token is delivered to the client through a secure cookie.
+
+Roles:
 
 - `ADMIN`
 - `MANAGER`
 - `ANALYST`
 
-The user belongs to a store in the initial relational model. If cross-store administrators are required, their access model must be explicitly designed rather than assumed.
+Authorization must be enforced in API routes and server-side domain operations. The frontend is not the security boundary.
 
-The authentication session stores a hashed session token, user reference, expiry, and timestamps. Passwords must be stored as secure password hashes, never plaintext.
+## 12. Deployment
 
-The PI-II-specific department, process, document, approval, publication, and audit relations are not part of Merchant Pulse unless separately justified.
+The web application is deployed to Vercel. PostgreSQL is hosted by NeonDB.
 
-Do not confuse `AuthSession` with `VisitorSession`:
+Python data-science tasks are executed as explicit scripts or controlled development/processing jobs. They are not assumed to run continuously inside Vercel functions.
 
-- `AuthSession` identifies a person logged into the Merchant Pulse dashboard.
-- `VisitorSession` represents an anonymized e-commerce browsing session used for analytics.
+The initial architecture does not require a dedicated Python web server. If a later implementation requires online model inference, first evaluate whether precomputed forecasts and stored model outputs satisfy the requirement. Introduce a separate inference service only when there is a clear technical need.
 
-## 7. Data Acquisition and Ingestion
+### Environment configuration
 
-The ingestion layer accepts data from:
+Keep secrets and database URLs in environment variables. Never commit credentials or tokens.
 
-- CSV files.
-- APIs, if a suitable source is available.
-- Synthetic e-commerce generators.
-- IoT simulators or public telemetry datasets.
+Use separate development and test database configurations. Production migrations must be deliberate and reviewed.
 
-Each import must be associated with a data source and recorded in the import history.
+## 13. Security and privacy
 
-The pipeline should follow:
+- Validate all API input.
+- Enforce authentication and role permissions server-side.
+- Enforce store scope in queries.
+- Hash passwords with an appropriate password-hashing algorithm.
+- Store hashes of session tokens and reset tokens.
+- Use secure cookie settings in production.
+- Avoid logging secrets or consumer identifiers.
+- Exclude consumer personal information from exports.
+- Treat pseudonymous identifiers as protected data.
+- Limit telemetry ingestion payload sizes.
+- Prevent duplicate ingestion.
 
-1. Receive source data.
-2. Identify source format and expected schema.
-3. Parse records.
-4. Validate required fields and data types.
-5. Normalize categories, timestamps, and units.
-6. Detect duplicates.
-7. Reject or quarantine invalid records.
-8. Persist valid records in bounded batches.
-9. Record import statistics and errors.
+## 14. Architectural constraints
 
-Imports should be idempotent where possible. A retry must not silently duplicate previously imported events.
+The following constraints apply to the initial implementation:
 
-Use source event IDs or deterministic idempotency keys where available. Do not rely solely on timestamps and values if they cannot uniquely identify a record.
+- One Next.js application.
+- Pages Router.
+- JavaScript.
+- One PostgreSQL database.
+- Prisma for relational persistence.
+- Python for data-science workflows.
+- No microservices by default.
+- No permanent worker infrastructure by default.
+- No unnecessary state-management dependency.
+- No inventory-management module.
+- No physical sensor requirement.
+- No claim that synthetic data represents actual company transactions.
 
-## 8. Large-Scale Processing
-
-Large-scale preprocessing and model training belong in Python workflows, not in ordinary Next.js API requests.
-
-The Python pipeline must:
-
-- Record input and output dataset sizes.
-- Use efficient data types.
-- Avoid loading unnecessarily large files entirely into memory.
-- Use chunk processing or incremental reading when appropriate.
-- Document sampling strategies and sampling limitations.
-- Preserve reproducibility through configuration and random seeds.
-- Save processing metadata and experiment results.
-
-Sampling is not automatically required. Use the complete dataset when practical. If sampling is necessary, explain how it was performed and whether it preserves the distributions and patterns relevant to the analysis.
-
-The final dataset may be stored in PostgreSQL for application queries while raw and intermediate analytical files remain in the Python workspace.
-
-## 9. Preprocessing and Statistical Analysis
-
-Preprocessing must be explicit and reproducible.
-
-Each dataset should have a data dictionary containing:
-
-- Variable name.
-- Description.
-- Data type.
-- Measurement scale.
-- Allowed values or units.
-- Missing-value policy.
-- Transformation applied.
-- Analytical role.
-
-Categorical codes must remain categorical. For example, `0 = mobile`, `1 = desktop`, and `2 = tablet` must not be averaged as if they represented a numeric measurement.
-
-Outlier handling must be justified. Retain meaningful extreme events unless there is evidence that they are corrupted.
-
-## 10. Machine-Learning Workflow
-
-Machine learning is a mandatory project deliverable.
-
-The workflow:
-
-1. Define the problem and target.
-2. Select a suitable dataset.
-3. Define the observation unit.
-4. Prevent target leakage.
-5. Prepare features.
-6. Establish a baseline.
-7. Split data into training, validation, and test sets.
-8. Train candidate models.
-9. Evaluate generalization.
-10. Compare results and document limitations.
-11. Save model metadata and reproducible artifacts.
-12. Expose relevant results in the dashboard.
-
-For time-dependent data, use a chronological split where appropriate. Do not randomly mix future information into training when the real use case predicts future behavior.
-
-Use training and validation performance to investigate overfitting and underfitting.
-
-Metrics must match the task:
-
-- Regression: MAE, RMSE, optionally R².
-- Classification: precision, recall, F1-score, confusion matrix, and suitable ranking metrics.
-- Clustering: justified internal or external clustering evaluation, where applicable.
-
-The dashboard must clearly distinguish model performance metrics from business KPIs.
-
-## 11. IoT Architecture
-
-IoT ingestion is independent from e-commerce events and orders.
-
-The simulator or public data source generates timestamped measurements. The ingestion endpoint or batch importer validates and persists them in dedicated telemetry structures.
-
-A telemetry record should identify:
-
-- Store or owning context, when applicable.
-- Device or source.
-- Measurement type.
-- Numeric value.
-- Unit.
-- Measurement timestamp.
-- Ingestion timestamp.
-- Data-quality or validation status, where needed.
-- Import/source reference.
-
-The final measurement types and their analytical purpose remain open.
-
-The simulator must produce plausible time-series data with documented generation rules. It must not merely populate charts with hardcoded display values.
-
-## 12. Analytics and Recommendations
-
-Business calculations must live in centralized services or parameterized analytical queries.
-
-React components should not implement business formulas.
-
-API Routes should validate inputs, enforce access rules, call services, and return prepared results.
-
-Rule-based recommendations must be explainable and traceable to:
-
-- The rule identifier.
-- The metric evaluated.
-- The target or threshold.
-- The relevant period.
-- The affected store or product.
-- The suggested action.
-
-Recommendations are not machine-learning predictions.
-
-## 13. Interactive Dashboard
-
-The dashboard must support dynamic interaction.
-
-Global filters should include:
-
-- Store.
-- Date range.
-- Category where relevant.
-
-Page-specific filters may include:
-
-- Device.
-- Traffic source.
-- Product.
-- IoT device or telemetry source.
-- Measurement type.
-- ML model or prediction parameters.
-
-The charts must update from actual query results based on active filters.
-
-Suggested visualizations include:
-
-- KPI cards.
-- Funnel charts.
-- Time-series charts.
-- Product/category rankings.
-- Heatmaps for day and hour.
-- Box plots for distributions and outliers.
-- Scatter plots for relationships.
-- Correlation heatmaps where statistically justified.
-- Model evaluation charts and confusion matrices.
-
-Do not add advanced plots solely for appearance. Each visualization must answer a defined analytical question.
-
-## 14. Database and Prisma
-
-Prisma is the standard ORM.
-
-Use a centralized Prisma client and migrations for schema changes.
-
-Use raw SQL selectively for analytical aggregations, PostgreSQL-specific features, or queries that Prisma cannot express efficiently.
-
-Database constraints and indexes must reflect actual query patterns.
-
-The collaborator's SQL includes PostgreSQL views and functions. These may be implemented through SQL migration files where useful. Do not assume every view or generated column can be represented directly in the Prisma schema.
-
-Prefer parameterized queries and test analytical queries with representative data volumes.
-
-## 15. Deployment
-
-The Next.js application is deployed on Vercel and uses NeonDB.
-
-Vercel functions are request-oriented and must not be treated as permanent background workers.
-
-Large imports and model training should not be executed as unbounded work inside a dashboard request. They belong in bounded scripts or an explicitly designed execution process.
-
-The deployment plan must document where Python processing and model artifacts execute and how the web application accesses the resulting data.
-
-## 16. Architectural Restrictions
-
-Do not introduce without justification:
-
-- Microservices.
-- Express or a second web backend.
-- Redis.
-- Message brokers.
-- Permanent workers.
-- Complex state-management frameworks.
-- Full inventory-management workflows.
-- Physical IoT hardware as a requirement.
-- A second dashboard framework duplicating the Next.js GUI.
-
-Keep the architecture modular, testable, and appropriate for a small academic team.
+Any architectural expansion must be justified by a functional, academic, or measurable performance requirement.

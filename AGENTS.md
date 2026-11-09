@@ -1,308 +1,427 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# AGENTS.md — Merchant Pulse
 
-# This is NOT the Next.js you know
+Instructions for AI coding agents and contributors working on Merchant Pulse.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+**Documentation version:** 0.3
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+## 1. Project context
 
-<!-- END:nextjs-agent-rules -->
+Merchant Pulse is an e-commerce analytics and decision-support application developed for UNIVESP Projeto Integrador IV.
 
-# Merchant Pulse — AI Agent Instructions
+Its purpose is to help small e-commerce businesses understand the purchase journey, identify conversion bottlenecks, analyze product performance, and make better decisions through data.
 
-## 1. Role and Responsibilities
+The application includes:
 
-You are an AI software engineering agent working on Merchant Pulse.
+- An interactive e-commerce analytics dashboard.
+- A reproducible synthetic e-commerce data generator.
+- A data preprocessing and statistical analysis pipeline.
+- A supervised demand-forecasting model.
+- A simulated warehouse IoT telemetry pipeline.
+- An interactive IoT monitoring module.
 
-Your responsibility is to implement, improve, test, or document the application while respecting its established requirements and architecture.
+This is not an e-commerce storefront, payment system, inventory-management application, or general-purpose ERP.
 
-You must prioritize correctness, maintainability, simplicity, and consistency.
+## 2. Source of truth and documentation hierarchy
 
-Do not independently redefine the project scope or introduce architectural changes without authorization.
+Before making substantial changes, consult:
 
-## 2. Mandatory Documentation
+1. `docs/PROJECT_SPEC.md` — scope, requirements, and analytical definitions.
+2. `docs/ARCHITECTURE.md` — architecture, technology choices, and data flows.
+3. `docs/DATA_MODEL.md` — entities, relationships, and data semantics.
+4. `docs/ROADMAP.md` — implementation order and completion criteria.
+5. `README.md` — project overview and development setup.
 
-Before implementing any feature, review the relevant documentation:
+The uploaded final PI-IV report establishes the academic problem context and central objectives. These engineering documents define the current implementation baseline.
 
-- `README.md`: project overview.
-- `docs/PROJECT_SPEC.md`: functional requirements and scope.
-- `docs/ARCHITECTURE.md`: technical architecture.
-- `docs/DATA_MODEL.md`: database and analytical semantics.
-- `docs/ROADMAP.md`: implementation priorities.
+If a technical proposal conflicts with the academic report, identify the conflict rather than silently changing the project's purpose.
 
-The academic source of truth is:
+If a requirement is unclear, inspect the existing implementation and documentation before proposing a change. Do not invent requirements or assume that an unimplemented feature already exists.
 
-`Relatorio_Final_PI_IV.docx`
+## 3. Technology constraints
 
-If documentation is incomplete or contradictory, identify the conflict before proceeding.
-
-Never invent an established requirement.
-
-## 3. Technology Restrictions
-
-The project uses:
+### Web application
 
 - JavaScript.
 - Next.js Pages Router.
 - React.
 - Tailwind CSS.
 - Recharts.
-- Next.js API Routes.
 - Prisma ORM.
 - PostgreSQL.
 - NeonDB.
-- Jest.
 - Vercel.
+- Jest.
 
-### Do not introduce without explicit approval:
+### Data science
 
-- TypeScript.
-- Next.js App Router.
-- Express or another backend framework.
-- Microservices.
-- Redis.
-- Message brokers.
-- Unnecessary external services.
-- Unnecessary state management libraries.
-- Unnecessary dependencies.
+- Python.
+- Pandas.
+- NumPy.
+- scikit-learn.
+- CSV and optionally Parquet.
 
-Prefer the simplest implementation that satisfies the requirements.
+### Important constraints
 
-## 4. Coding Standards
+- Use JavaScript, not TypeScript, unless explicitly requested.
+- Keep the Next.js Pages Router. Do not migrate to the App Router.
+- Do not introduce Express as a separate server.
+- Do not introduce microservices by default.
+- Do not add Redis, Kafka, MQTT infrastructure, or permanent workers without a documented requirement.
+- Avoid unnecessary dependencies.
+- Prefer existing project utilities and libraries when they are sufficient.
+- Use exact package versions when adding npm dependencies, following the project's package-management convention.
+- Do not introduce a new state-management library without a concrete need.
 
-### JavaScript
+## 4. General engineering principles
 
-- Use JavaScript throughout the application.
-- Prefer clear and descriptive variable and function names.
-- Prefer small, focused functions.
-- Avoid unnecessary abstractions.
-- Handle errors explicitly.
-- Avoid duplicated business logic.
-- Use consistent formatting.
+- Prefer simple, readable, maintainable implementations.
+- Keep responsibilities separated by feature and domain.
+- Avoid unnecessary abstractions and premature generalization.
+- Do not duplicate business rules across pages or API routes.
+- Validate data at system boundaries.
+- Use explicit names for variables, functions, and database fields.
+- Handle errors deliberately.
+- Keep functions focused.
+- Avoid hidden side effects.
+- Do not silently ignore failed operations.
+- Preserve existing behavior unless a change is required and documented.
 
-### React and Next.js
+Before modifying a large area, inspect the relevant files and their dependencies. Do not rewrite working modules merely to impose a preferred style.
 
-- Follow the Pages Router architecture.
-- Keep page components focused on presentation and orchestration.
-- Extract reusable UI components when appropriate.
-- Avoid placing complex analytical calculations inside React components.
-- Use API Routes for backend operations.
-- Validate incoming API parameters.
+## 5. Data provenance and academic integrity
 
-### Backend
+The e-commerce generator produces synthetic records. The IoT simulator produces simulated telemetry.
 
-- Keep API routes thin.
-- Put business logic in services.
-- Keep database access centralized through Prisma.
-- Return consistent API responses.
-- Handle invalid input and database errors.
-- Never expose internal database details unnecessarily.
+Never:
 
-### Database
+- Describe generated transactions as real company transactions.
+- Claim simulated readings came from physical sensors.
+- Fabricate validation results or model metrics.
+- Claim that the application increased revenue or conversion without measured evidence.
+- Present a demonstration forecast as a verified business outcome.
+- Conceal the synthetic or simulated origin of data.
 
-- Use Prisma migrations for schema changes.
-- Never silently modify production database structures.
-- Preserve data integrity.
-- Define relationships and constraints explicitly.
-- Use Decimal for monetary values.
-- Avoid floating-point calculations for financial amounts.
-- Consider indexes based on real query patterns.
-- Keep development, testing, and production databases isolated.
+Use clear provenance labels in code, documentation, reports, and the interface wherever relevant.
 
-### Environment Configuration
+The synthetic dataset must be reproducible and internally consistent. The IoT simulator must produce plausible, documented values rather than arbitrary unrelated numbers.
 
-- Use environment files for local configuration.
-- Never commit secrets.
-- Never hardcode database credentials.
-- Keep `.env.example` updated.
-- Use the appropriate environment-specific database.
+## 6. E-commerce data rules
 
-## 5. Business Logic and Analytics
+### 6.1 Purchase journey
 
-Analytical calculations are central to Merchant Pulse.
+The funnel has five stages:
 
-All business metrics must be implemented in reusable services or utility functions.
+1. `VISIT`
+2. `PRODUCT_VIEW`
+3. `CART_ADD`
+4. `CHECKOUT_START`
+5. `ORDER_COMPLETED`
 
-Never duplicate the same calculation across multiple pages or API endpoints.
+Count distinct visitor sessions, not raw event rows.
 
-All formulas must follow `docs/DATA_MODEL.md`.
+Each stage is counted at most once per session. Stage progression must be chronologically valid.
 
-Pay particular attention to:
+The main funnel is attributed to the session start date.
 
-- Zero denominators.
-- Empty datasets.
-- Duplicate events.
-- Distinct session counting.
-- Date filtering.
-- Category filtering.
-- Cancelled orders.
-- Monetary precision.
+Do not confuse a session with an order. A session can generate more than one order.
 
-Never invent business metrics or modify established formulas without documenting the change.
+### 6.2 Revenue
 
-Rule-based recommendations must be supported by measurable evidence.
+Only the following statuses contribute to recognized revenue:
 
-Machine learning predictions must remain distinct from rule-based recommendations.
+- `PAID`
+- `SHIPPED`
+- `DELIVERED`
 
-## 6. Data Processing
+Exclude:
 
-Data ingestion must prioritize reliability and integrity.
+- `PENDING`
+- `CANCELLED`
+- `RETURNED`
 
-Every import implementation must consider:
+Revenue is attributed to order creation date in the store timezone.
 
-- Input validation.
-- Missing fields.
-- Invalid values.
-- Duplicate records.
-- Identifier consistency.
-- Batch processing.
-- Database transaction boundaries.
-- Error reporting.
-- Import history.
+Do not count pending orders as revenue.
 
-An unsuccessful import must not silently leave inconsistent records.
+Do not use order count as an exact substitute for converted-session count unless session-to-order attribution supports that calculation.
 
-Repeated imports must not duplicate previously processed records.
+### 6.3 Product performance
 
-## 7. IoT Development
+- Views and cart additions come from navigation events.
+- Sales and product revenue come from eligible order items.
+- Product queries must respect store scope and date filters.
+- Stock is read-only and optional.
+- Do not implement inventory movements or stock-management workflows.
 
-The IoT module is an independent data acquisition component.
+### 6.4 Privacy
 
-The physical device is simulated.
+- Do not introduce consumer names, emails, phone numbers, or full addresses.
+- Use pseudonymous visitor/customer hashes where necessary.
+- Treat hashes as pseudonymous, not automatically anonymous.
+- Do not expose raw visitor identifiers in the dashboard.
+- Exports must not contain consumer personal information.
 
-Agents must not mix IoT telemetry with e-commerce navigation events.
+## 7. Authentication rules
 
-The simulator and ingestion endpoint must use a documented payload structure.
+Dashboard authentication and visitor tracking are separate domains.
 
-Telemetry must be validated before persistence.
+Use the adapted PI-II authentication design:
 
-Do not introduce MQTT brokers or additional infrastructure unless explicitly approved.
+- `User`
+- `AuthSession`
+- `PasswordResetToken`
 
-## 8. Machine Learning
+Roles:
 
-Machine learning experimentation must remain separate from the Next.js application.
+- `ADMIN`
+- `MANAGER`
+- `ANALYST`
 
-Before integrating a model:
+Security requirements:
 
-1. Identify the dataset.
-2. Inspect its structure and limitations.
-3. Define the prediction target.
-4. Prepare the data.
-5. Establish a baseline.
-6. Evaluate model performance.
-7. Document limitations.
-8. Define the application integration method.
+- Never store plaintext passwords.
+- Store password hashes.
+- Generate secure session tokens.
+- Persist only hashes of session tokens.
+- Enforce session expiration.
+- Make password-reset tokens expiring and single-use.
+- Check user activity state.
+- Enforce role permissions on the server.
+- Enforce store scope in protected operations.
+- Do not trust client-provided store IDs or role values.
 
-Do not present unvalidated predictions as reliable business insights.
+Do not copy PI-II-specific entities, relations, or role values into Merchant Pulse.
 
-Do not use synthetic partner data to claim real-world predictive performance.
+## 8. Database and Prisma rules
 
-## 9. Testing Requirements
+- Prisma is the primary ORM.
+- PostgreSQL is the relational database.
+- Keep schema changes in Prisma migrations.
+- Do not edit production data or run destructive commands without explicit authorization.
+- Do not reset a database as a routine debugging technique.
+- Use separate development and test database configurations.
+- Preserve referential integrity.
+- Use database constraints for critical uniqueness rules.
+- Add indexes based on actual query patterns.
+- Use parameterized SQL for analytical queries when Prisma's ordinary query interface is insufficient.
+- Never construct unsafe SQL from untrusted user input.
 
-Use Jest.
+The initial store relationship must remain simple. Do not build subscription management, tenant provisioning, or complex SaaS isolation unless the scope changes explicitly.
 
-Tests must cover business-critical behavior, especially:
+## 9. Python data-science rules
 
-- KPI calculations.
-- Funnel calculations.
-- Product aggregations.
-- Date filtering.
-- Category filtering.
-- Recommendation rules.
-- Data validation.
-- Duplicate detection.
-- Import processing.
-- API behavior.
+Keep Python data-science code inside `data-science/`.
 
-Use deterministic test fixtures.
+### 9.1 Generation
 
-Unit tests should not require a live production database.
+- Use a fixed random seed by default.
+- Support configurable dates and volumes.
+- Generate records in batches.
+- Preserve referential integrity.
+- Keep the event journey plausible.
+- Keep order statuses and item totals consistent.
+- Record generator configuration and output counts.
+- Do not generate unrelated, disconnected collections merely to inflate record counts.
 
-Integration tests must use an isolated test database.
+### 9.2 Preprocessing
 
-Never execute destructive database commands against production.
+Follow this sequence:
 
-## 10. Implementation Workflow
+1. Ingestion.
+2. Structural validation.
+3. Missing-value analysis.
+4. Duplicate detection.
+5. Inconsistency and impossible-value checks.
+6. Variable classification.
+7. Transformation and feature engineering.
+8. Quality validation.
 
-Before starting a task:
+Record read, accepted, rejected, corrected, and deduplicated counts.
+
+Do not silently drop records or replace missing values without a documented rule.
+
+### 9.3 Statistical analysis
+
+Classify variables before selecting statistical methods.
+
+- Nominal categories: frequencies, proportions, mode.
+- Ordinal categories: frequencies and meaningful ordinal summaries.
+- Quantitative interval/ratio variables: appropriate numerical summaries.
+- IDs and hashes: identifiers, not continuous quantities.
+
+Never calculate a mean or standard deviation of arbitrary numeric IDs, category codes, or nominal labels.
+
+Use visualizations that support the analytical question. Appropriate examples include:
+
+- Histograms and box plots.
+- Scatter plots.
+- Time-series charts.
+- Correlation heatmaps where meaningful.
+- Day/hour heatmaps.
+- Multivariate comparisons.
+
+Do not add charts only for decoration.
+
+### 9.4 Large-data processing
+
+- Generate and process in batches or chunks.
+- Avoid unnecessary full-dataset DataFrame copies.
+- Select only needed columns.
+- Use appropriate dtypes.
+- Consider Parquet for intermediate datasets.
+- Measure representative memory and execution costs.
+- Document any sampling and its limitations.
+
+## 10. Machine-learning rules
+
+The selected task is supervised regression for daily units sold by product category.
+
+Main model candidate:
+
+`HistGradientBoostingRegressor`
+
+Baseline:
+
+Seasonal-naive prediction using the corresponding day from the previous week.
+
+Candidate features:
+
+- Category.
+- Day of week.
+- Month.
+- Weekend indicator.
+- Promotion indicator.
+- Sales lags of 1, 7, and 14 days.
+- Rolling means of 7 and 28 days.
+
+Critical rules:
+
+- Do not leak future information into features.
+- Generate lag and rolling features using only past observations.
+- Do not randomly split time-series data.
+- Use chronological training, validation, and test partitions.
+- Tune using validation data only.
+- Evaluate on the held-out test set.
+- Compare against the baseline.
+- Report MAE, RMSE, and R².
+- Inspect overfitting and underfitting.
+- Do not invent model performance.
+- Preserve model metadata and training-data date range.
+
+If the selected model performs worse than the baseline, report that result honestly and investigate it rather than hiding it.
+
+## 11. IoT rules
+
+The initial IoT context is simulated warehouse monitoring.
+
+Measurements:
+
+- Temperature in °C.
+- Relative humidity in %.
+- Energy consumption in kW.
+
+Initial target:
+
+- 10 devices.
+- Five-minute intervals.
+- 180 days.
+- 518,400 readings.
+
+The Python simulator sends telemetry to a Next.js API route over HTTP.
+
+The ingestion endpoint must:
+
+- Validate device identity.
+- Validate timestamps.
+- Validate measurement types and values.
+- Reject malformed payloads.
+- Prevent duplicate readings.
+- Enforce payload-size limits.
+- Return clear accepted/rejected results.
+
+Store telemetry separately from navigation events.
+
+Thresholds are configurable demonstration parameters, not certified safety limits.
+
+## 12. API and security rules
+
+- Validate all request bodies.
+- Validate query parameters.
+- Authenticate protected endpoints.
+- Authorize by role.
+- Enforce store scope.
+- Return consistent error responses.
+- Avoid exposing internal stack traces.
+- Do not log credentials, raw tokens, or sensitive identifiers.
+- Use secure cookie settings in production.
+- Do not assume that hiding a UI element enforces permission.
+
+## 13. Frontend rules
+
+- Build reusable components when there is genuine reuse.
+- Keep feature-specific logic grouped by feature.
+- Use Recharts for analytical charts.
+- Ensure filters update the displayed data.
+- Keep chart labels, units, and time ranges explicit.
+- Distinguish zero values from missing values.
+- Provide loading, empty, and error states.
+- Use responsive layouts for desktop and mobile.
+- Do not present precomputed forecasts as live model execution.
+- Identify synthetic and simulated data where appropriate.
+
+The interface is intended for non-technical business users. Avoid unexplained statistical terminology in primary dashboard views; provide clear labels and supporting explanations.
+
+## 14. Testing rules
+
+Use Jest for JavaScript tests and Python tests for data-science workflows.
+
+Prioritize tests for:
+
+- Funnel stage counting.
+- Session conversion semantics.
+- Eligible revenue statuses.
+- Average order value.
+- Store scoping.
+- Authentication and authorization.
+- Import validation.
+- Deduplication.
+- IoT payload validation.
+- Telemetry uniqueness.
+- Data preprocessing.
+- Feature generation and leakage prevention.
+- Chronological data splitting.
+- Model metric calculations.
+
+Use small deterministic fixtures for unit tests. Large-volume tests should be separate performance or integration tests.
+
+## 15. Working procedure for AI agents
+
+Before implementing a task:
 
 1. Read the relevant documentation.
-2. Understand the existing implementation.
-3. Identify affected modules.
-4. Check existing conventions.
-5. Identify dependencies and risks.
-6. Propose a small implementation plan when the task is substantial.
+2. Inspect the existing code.
+3. Identify the affected features and dependencies.
+4. Check whether the task changes data semantics or schema.
+5. Propose the smallest maintainable implementation.
+6. Identify migrations or environment changes.
+7. Implement incrementally.
+8. Add or update tests.
+9. Run relevant checks.
+10. Update documentation when behavior or decisions change.
 
-During implementation:
+Before running commands that delete data, reset databases, overwrite files, or change production resources, explain the impact and obtain explicit authorization.
 
-- Make focused changes.
-- Avoid unrelated refactoring.
-- Preserve existing functionality.
-- Follow established architecture.
-- Add tests for new business logic.
-- Update documentation when behavior or architecture changes.
+Do not silently install packages or infrastructure.
 
-After implementation:
+## 16. Definition of done
 
-1. Run relevant Jest tests.
-2. Run applicable linting or build checks.
-3. Review the modified files.
-4. Report any unresolved issues.
-5. Summarize what changed.
-6. Identify any required database migrations.
+A task is complete only when:
 
-Do not claim that a feature is complete if it has not been tested.
-
-## 11. Scope Control
-
-The following are outside the initial scope:
-
-- Complete e-commerce platform.
-- Payment processing.
-- Customer account management.
-- Inventory management.
-- Multi-tenant SaaS infrastructure.
-- Marketing automation.
-- Distributed infrastructure.
-
-Do not implement these features unless the project owner explicitly changes the scope.
-
-## 12. Decision Management
-
-The project owner has final authority over architectural and product decisions.
-
-When a requirement is ambiguous:
-
-- Do not guess when the decision materially affects architecture or data integrity.
-- Explain the ambiguity.
-- Present the available alternatives.
-- Recommend a solution.
-- Wait for approval when necessary.
-
-If a technical improvement is identified:
-
-- Explain the problem it solves.
-- Describe the proposed change.
-- Identify trade-offs.
-- Update the relevant documentation after approval.
-
-## 13. Communication
-
-At the end of each task, report:
-
-- What was implemented.
-- Which files were modified.
-- Which tests were executed.
-- Whether the tests passed.
-- Whether database migrations are required.
-- Any remaining limitations or decisions.
-
-Keep explanations clear and direct.
-
-The goal is a functional, maintainable university prototype, not unnecessary enterprise-level complexity.
-
-## 14. Core Principle
-
-**Preserve architectural consistency and analytical correctness over implementation speed.**
-
-Every feature must contribute to the established purpose of Merchant Pulse.
+- The implementation satisfies its documented requirement.
+- Relevant tests pass.
+- Data semantics remain consistent.
+- Security and store scope are respected.
+- Errors are handled.
+- Documentation is updated when necessary.
+- No synthetic or simulated result is misrepresented as real.
+- No unnecessary infrastructure or dependencies have been introduced.
