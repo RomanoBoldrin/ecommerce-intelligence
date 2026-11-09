@@ -1,362 +1,666 @@
-# Merchant Pulse — Data Model and Data Engineering
+# Merchant Pulse — Data Model
 
-## 1. Overview
+**Version:** 0.2  
+**Database:** PostgreSQL 14+
 
-Merchant Pulse uses PostgreSQL as its centralized data storage system.
+## 1. Modeling Principles
 
-The database stores e-commerce records, navigation events, product information, orders, IoT telemetry, and import execution history.
+The relational model is based on the collaborator's proposed PostgreSQL schema, adapted to the project's architecture and academic requirements.
 
-The data model is designed to support analytical queries while maintaining data integrity and traceability.
+The model supports:
 
-The initial model is relational and uses Prisma ORM.
+- Multiple stores.
+- Dashboard authentication.
+- Product and category catalogs.
+- E-commerce visitor sessions and events.
+- Orders and order items.
+- Data sources and import history.
+- Independent IoT telemetry.
+- Business recommendations and indicator targets.
+- Machine-learning experiment traceability.
 
-## 2. Core Entities
+The initial demonstration may contain only one store. The model should not require a complex multi-tenant infrastructure.
 
-### 2.1 Product
+All consumer analytical identifiers must be pseudonymous. Dashboard users are separate entities.
 
-Represents an item available in the e-commerce catalog.
+## 2. Important Naming Distinction
 
-Proposed attributes:
+There are two different session concepts:
 
-| Field      | Description                |
-| ---------- | -------------------------- |
-| id         | Internal primary key       |
-| externalId | Original source identifier |
-| name       | Product name               |
-| category   | Product category           |
-| price      | Current catalog price      |
-| createdAt  | Record creation date       |
-| updatedAt  | Last modification date     |
+- `AuthSession`: authenticated session for a Merchant Pulse dashboard user.
+- `VisitorSession`: anonymized e-commerce visitor session used to calculate browsing behavior and funnel metrics.
 
-### 2.2 NavigationEvent
+They must never share the same table or business meaning.
 
-Represents an interaction during a customer's browsing session.
+## 3. Proposed Entities
 
-| Field      | Description                               |
-| ---------- | ----------------------------------------- |
-| id         | Internal primary key                      |
-| externalId | Original event identifier, when available |
-| sessionId  | Anonymized session identifier             |
-| eventType  | Type of navigation event                  |
-| productId  | Related product, when applicable          |
-| occurredAt | Event timestamp                           |
-| metadata   | Optional additional attributes            |
+### Store
 
-### 2.3 Order
+Represents an e-commerce business being analyzed.
 
-Represents a purchase transaction.
+Suggested fields:
 
-| Field       | Description                        |
-| ----------- | ---------------------------------- |
-| id          | Internal primary key               |
-| externalId  | Original order identifier          |
-| sessionId   | Associated session, when available |
-| status      | Order status                       |
-| totalAmount | Total transaction amount           |
-| createdAt   | Order creation timestamp           |
+- `id`
+- `name`
+- `platform`
+- `timezone`
+- `currency`
+- `isActive`
+- `createdAt`
 
-### 2.4 OrderItem
+The timezone should be stored per store. The proposed default is `America/Sao_Paulo`.
 
-Represents an individual product within an order.
+### User
 
-| Field     | Description                   |
-| --------- | ----------------------------- |
-| id        | Internal primary key          |
-| orderId   | Associated order              |
-| productId | Associated product            |
-| quantity  | Purchased quantity            |
-| unitPrice | Price at the time of purchase |
+Represents a person authorized to use the Merchant Pulse dashboard.
 
-Historical unit prices must be preserved even if the current product price changes.
+Suggested fields:
 
-### 2.5 ImportJob
+- `id` — UUID.
+- `name`.
+- `email` — unique.
+- `passwordHash`.
+- `role`.
+- `isActive`.
+- `storeId`.
+- `lastAccessAt`.
+- `createdAt`.
+- `updatedAt`.
 
-Represents an execution of the dataset ingestion process.
+Initial roles:
 
-| Field            | Description                         |
-| ---------------- | ----------------------------------- |
-| id               | Internal primary key                |
-| filename         | Imported file name                  |
-| status           | Processing status                   |
-| totalRecords     | Total input records                 |
-| processedRecords | Successfully processed records      |
-| errorRecords     | Records that could not be processed |
-| createdAt        | Import start timestamp              |
-| completedAt      | Import completion timestamp         |
+- `ADMIN`
+- `MANAGER`
+- `ANALYST`
 
-### 2.6 IoTTelemetry
+The exact permissions remain to be finalized.
 
-Represents measurements received from the simulated IoT source.
+The model is adapted from the existing PI-II authentication design. PI-II-specific fields and relations are excluded.
 
-Proposed attributes:
+### AuthSession
 
-| Field           | Description                           |
-| --------------- | ------------------------------------- |
-| id              | Internal primary key                  |
-| deviceId        | Simulated device identifier           |
-| measurementType | Type of measurement                   |
-| value           | Numeric measurement                   |
-| unit            | Measurement unit                      |
-| recordedAt      | Timestamp generated by the simulator  |
-| receivedAt      | Timestamp received by the application |
-| metadata        | Optional additional information       |
+Represents an authenticated dashboard session.
 
-The actual measurement types and units must be established when the IoT simulator is specified.
+Suggested fields:
 
-IoT records must remain independent of navigation events and orders.
+- `sessionId` — UUID primary key.
+- `tokenHash` — unique hash of the session token.
+- `userId`.
+- `expiresAt`.
+- `createdAt`.
+- `updatedAt`.
 
-## 3. Entity Relationships
+Indexes:
 
-The proposed relationships are:
+- `userId`.
+- `expiresAt`.
+- `(userId, expiresAt)`.
 
-- One product can be associated with multiple navigation events.
-- One product can appear in multiple order items.
-- One order contains one or more order items.
-- One order item references one product.
-- One import job can process multiple records across supported datasets.
-- IoT telemetry belongs to a simulated device identifier.
+The raw session token must not be stored.
 
-The initial design does not require customer accounts or personally identifiable customer records.
+### PasswordResetToken
 
-## 4. Event Taxonomy
+Suggested fields:
 
-The purchasing journey consists of five standardized events.
+- `id` — UUID.
+- `token` — unique token or secure token hash, depending on the authentication implementation.
+- `userId`.
+- `expiresAt`.
+- `usedAt`.
+- `createdAt`.
 
-| Event Type         | Description                           |
-| ------------------ | ------------------------------------- |
-| PAGE_VIEW          | A customer visits the online store    |
-| PRODUCT_VIEW       | A customer views a product            |
-| ADD_TO_CART        | A customer adds a product to the cart |
-| CHECKOUT_STARTED   | A customer begins checkout            |
-| PURCHASE_COMPLETED | A purchase is completed               |
+Tokens must be single-use and expire. The implementation should store a securely generated token or its hash, not expose reusable reset credentials in logs.
 
-All events should use standardized event identifiers internally, regardless of their original representation in imported datasets.
+### Category
 
-### Event Counting Rules
+Represents a product category within a store.
 
-The funnel must count distinct sessions at each stage rather than simply counting event rows.
+Suggested fields:
 
-This avoids inflating the funnel when the same session generates multiple events of the same type.
+- `id`
+- `storeId`
+- `name`
 
-A session should count at a stage when it has generated the corresponding event within the selected analysis period.
+Constraint:
 
-The chronological relationship between stages should be respected.
+- Unique `(storeId, name)`.
 
-The treatment of sessions spanning multiple dates and the exact attribution window must be formally defined before the funnel implementation.
+### Product
 
-## 5. Analytical Indicators
+Represents an e-commerce product.
 
-The following formulas are established by the academic report.
+Suggested fields:
 
-### Product View Rate
+- `id`
+- `storeId`
+- `categoryId` — nullable.
+- `sku`
+- `name`
+- `price`
+- `currentStock` — optional if the source provides it.
+- `minimumStock` — optional if the source provides it.
+- `isActive`
 
-Product views divided by visits.
+Constraints:
 
-### Add-to-Cart Rate
+- Price must not be negative.
+- Stock values must not be negative when present.
+- Unique `(storeId, sku)`.
 
-Cart additions divided by product views.
+Stock fields support indicators and minimum-stock alerts. They do not imply full inventory management.
 
-### Checkout Initiation Rate
+### DataSource
 
-Checkout initiations divided by cart additions.
+Represents an external or internal source of data.
 
-### Conversion Rate
+Suggested fields:
 
-Completed orders divided by visits.
+- `id`
+- `storeId`
+- `name`
+- `type`
+- `configuration`
+- `isActive`
 
-### Checkout Abandonment Rate
+Initial source types:
 
-1 − (completed orders / checkout initiations).
+- `CSV`
+- `API`
+- `SYNTHETIC`
+- `IOT_SIMULATOR`
+- `PUBLIC_DATASET`
 
-### Average Order Value
+Configuration may contain mappings and non-secret metadata. Credentials and API secrets must not be stored in plain-text JSON.
 
-Gross revenue divided by completed orders.
+### ImportJob
 
-### Calculation Rules
+Represents one execution of an ingestion process.
 
-- Return zero or an explicitly defined empty-state result when the denominator is zero.
-- Never return `NaN` or `Infinity`.
-- Preserve monetary precision using database decimal types.
-- Apply consistent date and category filters.
-- Centralize calculations in analytics services.
-- Test all calculations using Jest.
+Suggested fields:
 
-### Metric Semantics Requiring Definition
+- `id`
+- `sourceId`
+- `startedAt`
+- `completedAt`
+- `status`
+- `rowsRead`
+- `rowsValid`
+- `rowsRejected`
+- `errorMessage`
 
-The academic formulas must remain the reference, but their implementation requires consistent counting units.
+Initial statuses:
 
-Before implementing analytics, establish:
+- `RUNNING`
+- `COMPLETED`
+- `ERROR`
 
-1. Whether visits represent unique sessions or page-view events.
-2. Whether product views represent unique sessions or individual product-view events.
-3. Whether cart additions represent sessions or cart-addition actions.
-4. How multiple orders within one session are handled.
-5. Whether gross revenue includes taxes, shipping, discounts, or cancelled orders.
-6. Which order statuses qualify as completed purchases.
-7. How orders are attributed to navigation sessions.
+Optional future fields may record file name, checksum, processing duration, and additional quality statistics.
 
-These decisions must be documented and applied consistently.
+### VisitorSession
 
-## 6. Data Ingestion Pipeline
+Represents one anonymized e-commerce browsing session.
 
-The ingestion process follows these stages:
+Suggested fields:
 
-### Stage 1 — Input
+- `id` — BigInt or another suitable identifier.
+- `storeId`.
+- `sessionHash`.
+- `customerHash` — nullable.
+- `startedAt`.
+- `device`.
+- `trafficSource`.
+- `state` — optional, restricted to UF.
+- `importJobId` — nullable.
 
-Receive a supported CSV file or IoT telemetry payload.
+Constraints and considerations:
 
-### Stage 2 — Parsing
+- Unique `(storeId, sessionHash)` when the source's session identifier is stable and unique within the intended retention period.
+- Do not store the original session or customer identifier.
+- A plain SHA-256 hash is pseudonymization, not guaranteed anonymization. Prefer a keyed HMAC when the source and processing workflow permit it.
+- Avoid collecting unnecessary geographic or behavioral details.
 
-Convert the input into structured records.
+### Event
 
-### Stage 3 — Validation
+Represents an action within a visitor session.
 
-Check:
+Suggested fields:
 
-- Required columns.
-- Data types.
-- Missing values.
-- Date formats.
-- Valid event types.
-- Valid monetary values.
-- Product references.
-- Identifier consistency.
+- `id` — BigInt.
+- `visitorSessionId`.
+- `type`.
+- `productId` — nullable.
+- `occurredAt`.
+- `value` — nullable.
+- `externalEventId` or `idempotencyKey` — nullable, depending on the source.
 
-### Stage 4 — Normalization
+Canonical event types:
 
-Standardize:
+- `PRODUCT_VIEW`
+- `ADD_TO_CART`
+- `CHECKOUT_STARTED`
+- `PURCHASE_COMPLETED`
 
-- Dates and timestamps.
-- Event identifiers.
-- Product identifiers.
-- Categories.
-- Session identifiers.
-- Monetary values.
-- Order statuses.
+A visit is represented by `VisitorSession` creation. Do not count a separate `VISIT` event as another visit unless the source semantics specifically require it.
 
-### Stage 5 — Duplicate Detection
+If the source contains page-view events, use `PAGE_VIEW` as a separate event type. The final event taxonomy must match the chosen dataset.
 
-Detect previously imported records using stable source identifiers or a documented deduplication strategy.
+### Order
 
-Importing the same dataset twice must not duplicate existing records.
+Represents a completed or attempted e-commerce transaction.
 
-### Stage 6 — Persistence
+Suggested fields:
 
-Persist validated records through Prisma.
+- `id` — BigInt.
+- `storeId`.
+- `visitorSessionId` — nullable.
+- `externalCode`.
+- `createdAt`.
+- `status`.
+- `productAmount`.
+- `shippingAmount`.
+- `discountAmount`.
+- `taxAmount` — optional, depending on the source.
+- `currency` — optional if the store currency is not sufficient.
+- `createdAt` and other audit timestamps as needed.
 
-### Stage 7 — Import Reporting
+Suggested statuses:
 
-Record:
+- `PENDING`
+- `PAID`
+- `SHIPPED`
+- `DELIVERED`
+- `CANCELLED`
+- `RETURNED`
 
-- Total input records.
-- Successfully processed records.
-- Rejected records.
-- Import status.
-- Processing timestamps.
-- Relevant error information.
+Constraint:
 
-## 7. Import Integrity
+- Unique `(storeId, externalCode)`.
 
-The import process should be deterministic and idempotent.
+The proposed `totalAmount` is derived from the monetary components. It may be calculated in analytical queries or maintained through a database-generated expression if the Prisma migration strategy supports it reliably.
 
-Partial failures must not leave the database in an inconsistent state.
+Do not silently assume that a stored total is correct if the component values disagree.
 
-Transactions should be used where appropriate.
+### OrderItem
 
-For large datasets, process records in bounded batches instead of attempting to load the entire dataset into memory.
+Represents a product included in an order.
 
-Rejected records should be traceable without exposing sensitive information.
+Suggested fields:
 
-## 8. Database Indexing
+- `orderId`.
+- `productId`.
+- `quantity`.
+- `unitPrice`.
 
-Indexes should be considered for:
+Composite primary key:
 
-- NavigationEvent.sessionId
-- NavigationEvent.eventType
-- NavigationEvent.occurredAt
-- NavigationEvent.productId
-- Order.createdAt
-- Order.status
-- Order.sessionId
-- OrderItem.orderId
-- OrderItem.productId
-- IoTTelemetry.deviceId
-- IoTTelemetry.recordedAt
+- `(orderId, productId)` if the source guarantees one consolidated line per product.
+- Otherwise use a separate identifier and allow multiple lines.
 
-Composite indexes should be introduced according to actual query patterns and execution plans.
+Constraints:
 
-Do not create unnecessary indexes without considering their storage and write-performance costs.
+- Quantity must be greater than zero.
+- Unit price must not be negative.
 
-## 9. Synthetic Dataset
+### IoTDevice / TelemetrySource
 
-The project initially uses synthetic e-commerce data.
+Represents a simulated device or public telemetry source.
 
-The dataset should include:
+Suggested fields:
 
-- Multiple products.
-- Multiple product categories.
-- Multiple browsing sessions.
-- All five event types.
-- Completed orders.
-- Multiple order items.
-- Different purchase outcomes.
-- Different dates and times.
-- Both successful and abandoned purchasing journeys.
+- `id`
+- `storeId` — nullable if the telemetry source is independent of a specific store.
+- `sourceId` — optional reference to `DataSource`.
+- `externalDeviceId`
+- `name`
+- `deviceType`
+- `isActive`
+- `createdAt`
 
-The dataset should be internally consistent.
+The exact entity may be simplified if the selected dataset has no meaningful device identity. Do not invent physical devices merely to satisfy the schema.
 
-For example, completed purchases should have corresponding orders, and products referenced by navigation events or order items should exist in the product catalog.
+### IoTTelemetry
 
-It should contain deliberately varied patterns that allow the dashboard to demonstrate meaningful differences between products, categories, periods, and funnel stages.
+Stores timestamped IoT measurements.
 
-Synthetic data must never be presented as actual partner-business performance.
+Suggested fields:
 
-## 10. IoT Data Source
+- `id` — BigInt.
+- `deviceId` or `sourceId`.
+- `metricName`.
+- `numericValue`.
+- `unit`.
+- `measuredAt`.
+- `ingestedAt`.
+- `qualityStatus` — optional.
+- `importJobId` — nullable.
+- `externalRecordId` or `idempotencyKey` — nullable.
 
-The simulated IoT source is an independent acquisition component.
+The telemetry model must support high-volume time-series queries.
 
-It must:
+The actual metric names, units, and acquisition frequency must be selected based on the chosen IoT dataset or simulator.
 
-- Generate realistic timestamped measurements.
-- Identify the simulated device.
-- Transmit telemetry through an HTTP endpoint.
-- Validate payloads.
-- Persist valid measurements.
-- Reject malformed payloads.
+IoT telemetry must not be stored as e-commerce `Event` records.
 
-IoT measurements must not be inserted into NavigationEvent or Order.
+### Recommendation
 
-The IoT source should demonstrate that the data architecture can integrate an additional acquisition channel.
+Represents an explainable business recommendation.
 
-## 11. Privacy and Data Protection
+Suggested fields:
 
-The system must use aggregated or anonymized information.
+- `id`
+- `storeId`
+- `productId` — nullable.
+- `ruleCode`
+- `title`
+- `description`
+- `priority`
+- `generatedAt`
+- `resolvedAt` — nullable.
+- Optional metric/target snapshot or structured evidence.
 
-It must not store or expose:
+Priorities:
 
-- Customer names.
-- Email addresses.
-- Phone numbers.
-- Physical addresses.
-- Payment information.
-- Other personally identifiable customer information.
+- `LOW`
+- `MEDIUM`
+- `HIGH`
+- `CRITICAL`
 
-Session identifiers must not directly identify individuals.
+Recommendations should be traceable to the rule and evidence that generated them.
 
-## 12. Data Model Status
+### IndicatorTarget
 
-This document describes the proposed conceptual model, not a finalized Prisma schema.
+Represents a target or alert threshold for a store-level business indicator.
 
-Before database implementation, the following must be specified:
+Suggested fields:
 
-- Exact Prisma field types.
-- Unique constraints.
-- Foreign-key behavior.
-- Referential integrity.
-- Nullability.
-- Deduplication strategy.
-- Import transaction boundaries.
-- Metric counting semantics.
-- IoT measurement taxonomy.
+- `id`
+- `storeId`
+- `indicator`
+- `targetValue`
+- `alertThreshold`
+- `createdAt`
+- `updatedAt`
 
-Any modification must preserve the analytical integrity of the application.
+Constraint:
+
+- Unique `(storeId, indicator)`.
+
+Indicator values must include a documented unit and interpretation. A percentage, currency value, and count must not be treated interchangeably.
+
+### MLExperiment / ModelRun
+
+A small experiment metadata entity is recommended for reproducibility.
+
+Suggested fields:
+
+- `id`
+- `name`
+- `algorithm`
+- `targetVariable`
+- `datasetVersion`
+- `featureSetVersion`
+- `trainingStartedAt`
+- `completedAt`
+- `evaluationMethod`
+- `metrics` — JSON or normalized metric records.
+- `artifactReference` — optional.
+- `notes`
+
+The trained model file itself does not need to be stored as a database blob. Store a versioned artifact reference and experiment metadata.
+
+A prediction table is optional and should be added only if the application needs to persist prediction results.
+
+## 4. Relationships
+
+```mermaid
+erDiagram
+    STORE ||--o{ USER : has
+    USER ||--o{ AUTH_SESSION : authenticates
+    USER ||--o{ PASSWORD_RESET_TOKEN : receives
+
+    STORE ||--o{ CATEGORY : contains
+    STORE ||--o{ PRODUCT : contains
+    CATEGORY ||--o{ PRODUCT : classifies
+
+    STORE ||--o{ DATA_SOURCE : configures
+    DATA_SOURCE ||--o{ IMPORT_JOB : executes
+
+    STORE ||--o{ VISITOR_SESSION : records
+    VISITOR_SESSION ||--o{ EVENT : generates
+    PRODUCT ||--o{ EVENT : referenced_by
+
+    STORE ||--o{ ORDER : processes
+    VISITOR_SESSION ||--o{ ORDER : may_originate
+    ORDER ||--o{ ORDER_ITEM : contains
+    PRODUCT ||--o{ ORDER_ITEM : included_in
+
+    DATA_SOURCE ||--o{ IOT_DEVICE : provides
+    IOT_DEVICE ||--o{ IOT_TELEMETRY : produces
+
+    STORE ||--o{ RECOMMENDATION : receives
+    PRODUCT ||--o{ RECOMMENDATION : concerns
+    STORE ||--o{ INDICATOR_TARGET : defines
+
+    STORE {
+        uuid id PK
+        string name
+        string platform
+        string timezone
+        string currency
+    }
+
+    USER {
+        uuid id PK
+        uuid store_id FK
+        string email UK
+        string password_hash
+        enum role
+    }
+
+    AUTH_SESSION {
+        uuid session_id PK
+        uuid user_id FK
+        string token_hash UK
+        datetime expires_at
+    }
+
+    VISITOR_SESSION {
+        bigint id PK
+        int store_id FK
+        string session_hash
+        string customer_hash
+        datetime started_at
+    }
+
+    EVENT {
+        bigint id PK
+        bigint visitor_session_id FK
+        int product_id FK
+        enum type
+        datetime occurred_at
+    }
+
+    ORDER {
+        bigint id PK
+        int store_id FK
+        bigint visitor_session_id FK
+        string external_code
+        enum status
+    }
+
+    ORDER_ITEM {
+        bigint order_id PK,FK
+        int product_id PK,FK
+        int quantity
+        decimal unit_price
+    }
+
+    IOT_DEVICE {
+        bigint id PK
+        int store_id FK
+        string external_device_id
+    }
+
+    IOT_TELEMETRY {
+        bigint id PK
+        bigint device_id FK
+        string metric_name
+        decimal numeric_value
+        datetime measured_at
+    }
+```
+
+The diagram is conceptual. The final Prisma schema may use UUIDs, integer IDs, or BigInt according to entity volume and source requirements.
+
+## 5. Analytical Definitions
+
+### Funnel
+
+The funnel counts distinct visitor sessions reaching each stage.
+
+| Stage           | Definition                                                    |
+| --------------- | ------------------------------------------------------------- |
+| Visits          | Distinct sessions                                             |
+| Product views   | Distinct sessions with at least one product-view event        |
+| Cart additions  | Distinct sessions with at least one add-to-cart event         |
+| Checkout starts | Distinct sessions with at least one checkout-start event      |
+| Purchases       | Distinct sessions with at least one qualifying purchase event |
+
+The session start date is the proposed cohort date for funnel reporting. Events are attributed to the session's cohort, even if they occur later, subject to an explicit session-attribution window.
+
+The final implementation must define how long after session start events remain attributable to that session.
+
+### Funnel conversion
+
+For consecutive stages:
+
+`Stage conversion rate = sessions reaching next stage / sessions reaching current stage × 100`
+
+`Stage loss rate = 100 − stage conversion rate`
+
+Use `NULL` or an explicit unavailable state when the denominator is zero.
+
+### Overall conversion
+
+Proposed definition:
+
+`Conversion rate = converted eligible sessions / eligible sessions × 100`
+
+Do not divide orders by visits unless the metric is explicitly defined as order-per-visit rate. Multiple orders from one session can otherwise produce a value that is not a session conversion rate.
+
+### Checkout abandonment
+
+`Checkout abandonment = 1 − converted checkout sessions / initiated checkout sessions`
+
+The numerator and denominator must use the same session cohort and attribution rules.
+
+### Average order value
+
+`Average order value = eligible recognized revenue / eligible order count`
+
+The proposed revenue policy excludes `PENDING`, `CANCELLED`, and `RETURNED` orders. Partial returns require a separate policy.
+
+### Revenue
+
+Preserve the monetary components:
+
+- Product amount.
+- Shipping.
+- Discount.
+- Tax, when available.
+
+The final revenue formula must state whether tax and shipping are included. Do not label gross revenue, net revenue, and collected revenue as interchangeable.
+
+## 6. Corrections and Cautions for the Collaborator's SQL
+
+The supplied SQL is a useful foundation, but the following issues must be resolved before its views and functions are adopted.
+
+### 6.1 Revenue status filter
+
+The supplied condition:
+
+`status NOT IN ('cancelado', 'devolvido')`
+
+also includes pending orders.
+
+For recognized revenue, explicitly include eligible statuses such as paid, shipped, and delivered.
+
+### 6.2 Funnel and revenue numerator mismatch
+
+The proposed KPI function combines session-based funnel counts with order-based revenue counts.
+
+These are not necessarily interchangeable. One session may produce multiple orders, and an order may not be linked to a session.
+
+Use session-based conversion metrics for the funnel and order-based metrics for order counts and revenue. Document both.
+
+### 6.3 Session attribution
+
+The daily funnel groups by session start date, while revenue groups by order creation date.
+
+These are different date semantics. The dashboard must label and calculate them consistently.
+
+### 6.4 Product performance time filters
+
+The proposed product view aggregates events and orders without a date filter. It cannot automatically represent a selected dashboard period.
+
+Implement period-aware analytical queries or materialized aggregates with explicit refresh semantics.
+
+### 6.5 Product attribution
+
+A product view and an order containing that product do not automatically prove that the view led to the purchase.
+
+Define an attribution rule before presenting product conversion.
+
+### 6.6 Event taxonomy
+
+The proposed enum includes `visita`, but the funnel already counts visitor sessions as visits.
+
+Avoid double-counting. Treat session creation as the visit unless the selected source requires another explicit event.
+
+### 6.7 Multi-store isolation
+
+Every store-scoped query must enforce the active user's store permissions. A store filter in the UI is not an authorization mechanism.
+
+If a user can access multiple stores, model that permission explicitly.
+
+### 6.8 Hashing and privacy
+
+SHA-256 alone does not guarantee anonymization. Use pseudonymous identifiers and protect any secret used to create them. Do not ingest raw identifiers into the analytical database.
+
+### 6.9 Generated monetary columns
+
+A generated `valor_total` may be implemented through PostgreSQL-specific migration SQL if needed. Confirm Prisma compatibility and migration behavior before adopting it.
+
+### 6.10 Date dimension
+
+A physical `dim_data` table is optional. PostgreSQL date/time grouping is sufficient for the initial implementation. Add a date dimension only if it provides a clear analytical or performance benefit.
+
+## 7. Indexing Strategy
+
+Initial candidates:
+
+- Visitor sessions: `(storeId, startedAt)`.
+- Visitor sessions: unique `(storeId, sessionHash)`.
+- Events: `(visitorSessionId)`.
+- Events: `(type, occurredAt)`.
+- Events: `(productId, occurredAt)` where useful.
+- Orders: `(storeId, createdAt)`.
+- Orders: unique `(storeId, externalCode)`.
+- Products: `(storeId, categoryId)`.
+- Recommendations: `(storeId, resolvedAt)` or a partial index for unresolved records.
+- IoT telemetry: `(deviceId, measuredAt)`.
+- IoT telemetry: `(metricName, measuredAt)` where useful.
+
+Index choices must be verified against actual queries and dataset size. Avoid creating indexes without a query or constraint that justifies them.
+
+## 8. Data Quality and Integrity
+
+The ingestion pipeline must preserve:
+
+- Original source reference.
+- Import execution reference.
+- Rejection reason.
+- Deduplication outcome.
+- Validation status.
+
+For large imports, do not keep every rejected record only in application logs. Preserve enough structured information to audit and reproduce data-quality decisions.

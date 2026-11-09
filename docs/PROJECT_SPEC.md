@@ -1,278 +1,341 @@
-# Merchant Pulse — Product Specification
+# Merchant Pulse — Project Specification
+
+**Version:** 0.2  
+**Project:** Projeto Integrador IV — UNIVESP
 
 ## 1. Purpose
 
-Merchant Pulse is an e-commerce intelligence application designed to help small businesses understand customer behavior, identify purchasing funnel bottlenecks, and make better business decisions through data analysis.
+Merchant Pulse is an e-commerce intelligence application that processes large-scale e-commerce and IoT data, performs statistical and machine-learning analysis, and presents the resulting information through an interactive web interface.
 
-The application consolidates navigation events, product information, and sales records into a centralized analytical environment.
+The application supports business decisions by identifying customer behavior patterns, sales-funnel losses, product performance, and relevant operational indicators.
 
-## 2. Target User
+## 2. Academic Requirements
 
-The primary user is the manager or owner of a small e-commerce business.
+The following requirements are mandatory for the project.
 
-The intended user:
+### AR01 — End-to-end data pipeline
 
-- Has limited time for analyzing business reports.
-- May have limited technical knowledge.
-- Needs to understand sales performance quickly.
-- Wants to identify problems in the purchasing journey.
-- Needs practical recommendations rather than raw data.
+Demonstrate the complete flow:
 
-The interface must prioritize clarity, usability, and understandable indicators.
+1. Data acquisition.
+2. Data ingestion.
+3. Data validation.
+4. Data cleaning and preprocessing.
+5. Data transformation and feature preparation.
+6. Storage and analytical processing.
+7. Statistical analysis.
+8. Machine-learning modeling.
+9. Interactive visualization.
+
+The pipeline must be documented and reproducible.
+
+### AR02 — Data at scale
+
+Use datasets with sufficient volume and complexity to demonstrate large-scale data handling.
+
+Requirements:
+
+- Document dataset origin and characteristics.
+- Record the number of records, variables, and relevant time coverage.
+- Explain why the selected data is appropriate for the analytical objective.
+- Document memory and processing constraints.
+- Use chunk processing, sampling, or incremental processing when justified.
+- Distinguish the complete dataset from any sampled or reduced dataset used in experiments.
+
+Do not claim that a dataset is large-scale merely because it contains many artificially duplicated rows. Generated data must represent plausible events or telemetry.
+
+The final dataset and volume target remain to be selected.
+
+### AR03 — Methodical preprocessing
+
+The project must document each preprocessing step, including:
+
+- Missing values.
+- Duplicate records.
+- Invalid or corrupted records.
+- Inconsistent categories and labels.
+- Incorrect timestamps and time zones.
+- Invalid numeric values.
+- Outliers and their treatment.
+- Data type conversion.
+- Normalization and transformation.
+- Data validation after cleaning.
+
+Every transformation must have a documented reason. Do not remove outliers or missing values automatically without evaluating their meaning.
+
+### AR04 — Variable classification
+
+Before statistical analysis or machine learning, classify variables according to their measurement scale.
+
+| Variable type | Subtype    | Examples                                     | Valid treatment                            |
+| ------------- | ---------- | -------------------------------------------- | ------------------------------------------ |
+| Qualitative   | Nominal    | Device, traffic source, category, event type | Frequency, proportions, mode               |
+| Qualitative   | Ordinal    | Priority, rating level, ordered status       | Frequency, proportions, ordinal methods    |
+| Quantitative  | Discrete   | Number of sessions, orders, items            | Mean, median, variance, standard deviation |
+| Quantitative  | Continuous | Revenue, duration, sensor measurement        | Mean, median, variance, standard deviation |
+
+Use the correct measurement scale. A nominal category represented by an integer code does not become quantitative.
+
+Examples of invalid operations:
+
+- Calculating the mean of product IDs.
+- Calculating the standard deviation of device codes.
+- Treating encoded traffic-source categories as continuous measurements.
+
+For qualitative variables, use frequency distributions, proportions, and mode where appropriate. For ordinal variables, preserve their ordering and select methods accordingly.
+
+### AR05 — Machine learning
+
+At least one machine-learning model must be implemented and evaluated.
+
+The project must:
+
+- Define an analytical problem and target variable.
+- Explain why the selected algorithm is appropriate.
+- Document features and preprocessing.
+- Separate training and evaluation data.
+- Prevent data leakage.
+- Evaluate generalization.
+- Investigate overfitting and underfitting.
+- Compare against a simple baseline.
+- Report suitable performance metrics.
+- Document limitations and interpretation.
+
+The exact model and target remain open until the dataset is selected.
+
+For regression, appropriate metrics include:
+
+- MAE — Mean Absolute Error.
+- RMSE — Root Mean Squared Error.
+- Optionally R².
+
+For classification, appropriate metrics include:
+
+- Precision.
+- Recall.
+- F1-score.
+- Confusion matrix.
+- ROC-AUC or PR-AUC when appropriate.
+
+RMSE and MAE are not universal metrics; they must not be used as substitutes for classification evaluation.
+
+### AR06 — IoT data acquisition
+
+The project must ingest IoT data through at least one of the following:
+
+- A software-based telemetry simulator.
+- A suitable public IoT dataset.
+
+The IoT data source must be independent of e-commerce navigation events and orders.
+
+The implementation must document:
+
+- The simulated device or data source.
+- Measurement types and units.
+- Timestamp semantics.
+- Acquisition frequency or generation strategy.
+- Payload structure.
+- Validation and quality checks.
+- Storage strategy.
+- Analytical purpose.
+
+A chart containing manually fabricated values is not sufficient evidence of IoT ingestion.
+
+### AR07 — Interactive software interface
+
+The project must provide an executable, interactive application.
+
+The Next.js web application is the primary GUI.
+
+Users must be able to interact with the data, for example by:
+
+- Selecting a store.
+- Changing date ranges.
+- Filtering by product category.
+- Selecting a device or telemetry source.
+- Adjusting a model parameter where appropriate.
+- Viewing charts that update based on selected filters.
+- Inspecting model evaluation results.
+- Obtaining predictions through an implemented model workflow.
+
+Static PDFs, slides, or notebook outputs alone are not acceptable as the final interface.
+
+The dashboard should include multivariate visualizations where appropriate, such as:
+
+- Box plots.
+- Scatter plots.
+- Heatmaps.
+- Time-series comparisons.
+- Correlation visualizations.
+- Other justified multivariate plots.
 
 ## 3. Functional Requirements
 
-### FR01 — Data Import
+### Authentication and access
 
-The application must allow importing authorized e-commerce datasets.
+- **FR01:** Users must authenticate before accessing the dashboard.
+- **FR02:** The application must support role-based access.
+- **FR03:** Administrative configuration must be restricted to authorized administrators.
+- **FR04:** Authentication sessions and password-reset tokens must be stored securely.
 
-Initial supported format: CSV.
+Initial roles:
 
-Imported datasets may contain:
+- `ADMIN`
+- `MANAGER`
+- `ANALYST`
 
-- Navigation events.
-- Product catalog information.
-- Orders and sales records.
+The exact permissions for each role must be documented before implementation. The initial proposal restricts store, user, data-source, and target configuration to `ADMIN`.
 
-The import process must validate the structure and contents before persisting records.
+### Stores and product catalog
 
-### FR02 — Data Processing
+- **FR05:** The system must support multiple stores in its data model.
+- **FR06:** Products must belong to a store and may belong to a category.
+- **FR07:** Product performance must be analyzable by store, category, and period.
+- **FR08:** Product stock quantity and minimum-stock threshold may be displayed as indicators and used for alerts.
+- **FR09:** The system must not become a full inventory-management application.
 
-The system must:
+### Data sources and ingestion
 
-- Validate required fields.
-- Normalize dates and identifiers.
-- Handle missing and invalid values.
-- Detect duplicate records.
-- Associate events with products when possible.
-- Record import execution results.
+- **FR10:** Users with appropriate permissions must be able to register or manage data sources.
+- **FR11:** The system must support CSV imports.
+- **FR12:** Import execution and results must be recorded.
+- **FR13:** Imports must report read, valid, and rejected row counts.
+- **FR14:** Data must be validated, normalized, and deduplicated before persistence.
+- **FR15:** The system must support synthetic data for development and demonstration.
+- **FR16:** IoT telemetry must be ingested independently.
 
-### FR03 — Overview Dashboard
+### E-commerce analytics
 
-The dashboard must display:
+- **FR17:** The Overview page must display key performance indicators.
+- **FR18:** The Sales Funnel page must display five journey stages.
+- **FR19:** Funnel counts must use distinct visitor sessions reaching each stage, not raw event counts.
+- **FR20:** Product analytics must display views, cart additions, orders, revenue, and conversion indicators.
+- **FR21:** Customer behavior analytics must display time, device, and traffic-source patterns.
+- **FR22:** The system must support period and category filters.
+- **FR23:** Comparisons must use clearly defined and consistent date intervals.
 
-- Total visits.
-- Completed orders.
-- Gross revenue.
-- Average order value.
-- Conversion rate.
-- Checkout abandonment rate.
-- Comparison with a previous period.
-- Daily traffic and order evolution.
-- Purchasing funnel overview.
-- Recommended actions.
+### Business recommendations
 
-### FR04 — Sales Funnel
+- **FR24:** The system must generate rule-based recommendations from defined business conditions.
+- **FR25:** Recommendations must include a title, explanation, priority, and relevant store or product.
+- **FR26:** Recommendations must be traceable to the metric or target that triggered them.
+- **FR27:** Users must be able to distinguish rule-based recommendations from machine-learning predictions.
 
-The application must visualize the following five stages:
+### IoT and machine learning
 
-1. Store visit.
+- **FR28:** The system must store timestamped IoT measurements with source/device identification.
+- **FR29:** The system must provide telemetry analysis and interactive visualizations.
+- **FR30:** The project must implement and evaluate at least one machine-learning model.
+- **FR31:** Model results must include the selected algorithm, target, evaluation method, and performance metrics.
+- **FR32:** Where supported by the chosen model, the dashboard must expose interactive predictions or parameterized analysis.
+
+### Export and configuration
+
+- **FR33:** Users must be able to export relevant dashboard data to CSV.
+- **FR34:** PDF export may be implemented for reporting, but it cannot replace the interactive application.
+- **FR35:** Administrators must be able to configure stores, users, data sources, and indicator targets.
+
+## 4. Business Metrics
+
+The following metrics are proposed for the e-commerce dashboard.
+
+| Metric               | Proposed definition                                      |
+| -------------------- | -------------------------------------------------------- |
+| Visits               | Distinct visitor sessions in the selected cohort         |
+| Product views        | Distinct sessions with at least one product-view event   |
+| Cart additions       | Distinct sessions with at least one add-to-cart event    |
+| Checkout starts      | Distinct sessions with at least one checkout-start event |
+| Conversion rate      | Converted sessions / eligible sessions                   |
+| Checkout abandonment | 1 − converted checkouts / initiated checkouts            |
+| Average order value  | Eligible order revenue / eligible order count            |
+| Product conversion   | Product-attributed orders / product-viewing sessions     |
+
+The final definitions must specify attribution, time windows, denominator eligibility, and treatment of multiple orders or events.
+
+## 5. Proposed Sales Funnel
+
+The funnel has five stages:
+
+1. Visit.
 2. Product view.
 3. Add to cart.
-4. Checkout initiation.
-5. Completed purchase.
+4. Checkout started.
+5. Purchase completed.
 
-The visualization must present:
+A visit is represented by a visitor session. It does not need to be duplicated as an event if session creation already represents the visit.
 
-- Volume of sessions at each stage.
-- Conversion between consecutive stages.
-- Proportional losses between stages.
-- Identification of the largest proportional drop.
+A session counts once at each stage, regardless of how many repeated events it generated.
 
-Funnel calculations must use a consistent session-counting methodology.
+The funnel should be monotonic when stages are defined as cumulative session reach. If a query produces a later stage count greater than an earlier stage count, investigate the data or attribution logic rather than hiding the discrepancy.
 
-### FR05 — Product Performance
+## 6. Revenue Rules
 
-The application must provide:
+The proposed order statuses are:
 
-- Product rankings.
-- Category performance.
-- Product views.
-- Cart additions.
-- Completed orders.
-- Conversion rates.
-- Revenue per product or category.
+- `PENDING`
+- `PAID`
+- `SHIPPED`
+- `DELIVERED`
+- `CANCELLED`
+- `RETURNED`
 
-The system should identify products with high interest but low conversion.
+For revenue and average order value, the proposed eligible statuses are `PAID`, `SHIPPED`, and `DELIVERED`.
 
-This module analyzes product performance and does not implement inventory management.
+`PENDING`, `CANCELLED`, and `RETURNED` must not automatically contribute to recognized revenue.
 
-### FR06 — Customer Behavior
+The exact policy for partial returns, discounts, shipping, and taxes remains to be finalized. The order model should preserve the individual monetary components so that the analytical calculation can be explicit.
 
-The application must provide analytical information about:
+## 7. Privacy Requirements
 
-- Browsing frequency.
-- Most active days.
-- Most active hours.
-- Product interest.
-- Session behavior patterns.
+- Do not ingest consumer direct identifiers.
+- Use pseudonymous session and customer identifiers where necessary.
+- Do not treat SHA-256 hashes as fully anonymous data.
+- Protect any keyed-hash secret.
+- Keep dashboard-user authentication separate from visitor tracking.
+- Restrict geographic information to state-level granularity when used.
+- Do not store credentials or API secrets in plain-text configuration JSON.
 
-Customer analysis must use anonymized identifiers or aggregated data.
+## 8. Non-Functional Requirements
 
-### FR07 — Filters
-
-The dashboard must support:
-
-- Date range selection.
-- Product category filtering.
-
-All applicable dashboard indicators and visualizations must respect the selected filters.
-
-### FR08 — Recommendations
-
-The system must generate automatic recommendations based on analytical rules.
-
-Each recommendation should contain:
-
-- A description of the observed condition.
-- The metric or evidence supporting it.
-- A suggested business action.
-- An indication of priority.
-
-Recommendations must not present correlation or observed patterns as proven causes.
-
-### FR09 — Data Management
-
-The system must provide:
-
-- Dataset import interface.
-- Import history.
-- Import status.
-- Total processed records.
-- Failed record counts.
-- Pipeline execution information.
-
-### FR10 — Export
-
-The system should support exporting analytical summaries in CSV and, if feasible, PDF.
-
-## 4. IoT Requirements
-
-The project incorporates an independent simulated IoT acquisition component.
-
-Physical hardware is not required.
-
-The IoT component must demonstrate:
-
-1. Generation of simulated sensor readings.
-2. Transmission of telemetry through an HTTP API.
-3. Validation of incoming measurements.
-4. Persistence in PostgreSQL.
-5. Availability of telemetry for analytical queries.
-
-IoT telemetry must remain logically separate from e-commerce navigation events and sales records.
-
-Its purpose is to demonstrate an additional data acquisition source and its integration into the data pipeline.
-
-The exact sensor type, telemetry fields, generation frequency, and analytical use remain subject to technical specification.
-
-## 5. Machine Learning Requirements
-
-The project theme includes machine learning.
-
-The proposed implementation is a modest predictive model for e-commerce purchase intention or abandonment.
-
-A possible approach is:
-
-- Use a suitable public e-commerce dataset.
-- Prepare and explore the dataset.
-- Train a classification baseline.
-- Evaluate the model using appropriate metrics.
-- Document its limitations.
-- Make predictions available to the application if integration is feasible.
-
-The partner's synthetic or aggregated operational data must not be represented as sufficient training data without evidence.
-
-Machine learning predictions must be clearly distinguished from rule-based recommendations.
-
-The exact dataset, algorithm, evaluation criteria, and deployment approach remain pending.
-
-## 6. Non-Functional Requirements
-
-### NFR01 — Privacy
-
-The application must not expose personally identifiable customer information.
-
-### NFR02 — Usability
-
-The interface must be understandable to users without technical expertise.
-
-### NFR03 — Data Consistency
-
-The same inputs and calculation rules must produce consistent analytical results.
-
-### NFR04 — Maintainability
-
-The application must use modular and clearly separated business logic.
-
-### NFR05 — Performance
-
-Analytical queries must avoid unnecessary retrieval of raw event records.
-
-The backend should return aggregated results whenever possible.
-
-### NFR06 — Responsiveness
-
-The dashboard must adapt to desktop and mobile screen sizes.
-
-### NFR07 — Reliability
-
-Invalid imports and failed processing operations must be handled without corrupting existing data.
-
-## 7. Explicitly Out of Scope
-
-The following features are not part of the initial project:
-
-- Building an e-commerce storefront.
-- Payment processing.
-- Customer registration and authentication.
-- Customer relationship management.
-- Complete inventory management.
-- Order fulfillment.
-- WhatsApp or email marketing automation.
-- Complex multi-tenant infrastructure.
-- Distributed microservices.
-- Real-time production-scale streaming infrastructure.
-
-These features must not be implemented unless the project scope is explicitly revised.
-
-## 8. MVP Definition
-
-The minimum viable prototype must demonstrate:
-
-1. Successful dataset import.
-2. Data validation and normalization.
-3. Persistent PostgreSQL storage.
-4. Correct KPI calculations.
-5. Five-stage purchasing funnel.
-6. Product and category analysis.
-7. Customer behavior analysis.
-8. Date and category filters.
-9. Rule-based recommendations.
-10. Independent simulated IoT data acquisition.
-
-Machine learning should be treated as a planned academic deliverable, with the specific implementation agreed upon before that phase.
+- Maintainable modular architecture.
+- Reproducible data-processing scripts.
+- Deterministic preprocessing where feasible.
+- Traceable import errors.
+- Consistent timezone handling.
+- Parameterized database queries.
+- Appropriate database indexes.
+- Automated tests for core calculations and transformations.
+- Separate development, test, and production environments.
+- No production database reset or destructive operation as part of routine testing.
+- Responsive and accessible dashboard controls.
+- No claims of causation based solely on observational correlations.
 
 ## 9. Acceptance Criteria
 
-The prototype is considered functionally complete when:
+The project is ready for final academic evaluation when it can demonstrate:
 
-- Valid datasets can be imported.
-- Invalid datasets produce understandable errors.
-- Duplicate imports do not duplicate records.
-- Dashboard values correspond to the underlying database records.
-- Filters produce consistent results across applicable screens.
-- The funnel correctly identifies the largest proportional loss.
-- Product rankings are calculated correctly.
-- Recommendations are supported by actual metrics.
-- Simulated IoT telemetry can be transmitted, validated, and persisted.
-- Automated tests cover the principal business calculations.
-- The application can be deployed to Vercel.
+1. A documented dataset with meaningful volume and complexity.
+2. A reproducible end-to-end pipeline.
+3. Preprocessing with documented quality decisions.
+4. A variable-classification inventory and statistically valid analysis.
+5. At least one trained and evaluated machine-learning model.
+6. Evidence of generalization checks and baseline comparison.
+7. Independent IoT data ingestion and analysis.
+8. A functional interactive web application.
+9. Dynamic filtering and advanced visualizations.
+10. Traceable business recommendations.
+11. Documented limitations, results, and methodology.
 
-## 10. Requirements Traceability
+## 10. Open Decisions
 
-The academic requirements are derived from `Relatorio_Final_PI_IV.docx`.
+The following must be resolved before implementation:
 
-This specification translates them into software requirements.
-
-If an academic requirement changes, this document must be reviewed before implementation changes are made.
+- Final e-commerce dataset and its licensing/provenance.
+- Final dataset size and scale demonstration.
+- IoT source, measurement types, units, and acquisition frequency.
+- Machine-learning target, algorithm, and evaluation protocol.
+- Event attribution and sessionization rules.
+- Revenue treatment for partial returns, taxes, shipping, and discounts.
+- Import deduplication keys and update behavior.
+- Store access and role-permission rules.
+- Whether the dashboard will persist model predictions or calculate them on demand.

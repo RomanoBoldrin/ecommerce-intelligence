@@ -1,284 +1,326 @@
-# Merchant Pulse — Development Roadmap
+# Merchant Pulse — Implementation Roadmap
 
-## Project Status
+**Version:** 0.2
 
-Current stage: Planning and technical specification.
+## Guiding Principle
 
-The roadmap defines the intended implementation sequence.
+Do not begin full implementation until the most important dataset, data-model, IoT, and machine-learning decisions have been resolved.
 
-Phases should be completed incrementally, with testing and documentation updates before moving to dependent phases.
+The project must be developed in an order that produces a demonstrable end-to-end pipeline rather than a collection of disconnected screens.
 
----
+## Phase 0 — Requirements and Research
 
-## Phase 1 — Project Foundation
+### Tasks
 
-**Objective:** Establish the development environment and application foundation.
+- Review the PI-IV academic report.
+- Review the project specification and architecture.
+- Select candidate e-commerce datasets.
+- Evaluate dataset provenance, licensing, variables, size, and time coverage.
+- Select candidate IoT datasets or define a simulator.
+- Define the intended machine-learning problem.
+- Resolve session and order attribution semantics.
+- Define initial store and role permissions.
 
-Tasks:
+### Deliverables
 
-- [ ] Create Next.js application using JavaScript.
-- [ ] Configure Next.js Pages Router.
-- [ ] Configure Tailwind CSS.
-- [ ] Configure Jest.
-- [ ] Configure Prisma ORM.
-- [ ] Connect development PostgreSQL database through NeonDB.
-- [ ] Configure environment files.
-- [ ] Establish Git repository.
-- [ ] Create initial project documentation.
-- [ ] Establish development and test database environments.
+- Finalized requirements.
+- Dataset evaluation document.
+- Initial data dictionary.
+- IoT acquisition specification.
+- Machine-learning problem statement.
+- Approved data-model decisions.
 
-**Deliverable:** A running Next.js application connected to PostgreSQL.
+### Completion criteria
 
-**Completion criteria:** Application builds, Prisma connects, and Jest executes successfully.
+The team can explain what data will be processed, why it is appropriate, how IoT will be ingested, and what the ML model is intended to predict or discover.
 
----
+## Phase 1 — Repository and Development Foundation
 
-## Phase 2 — Database Design
+### Tasks
 
-**Objective:** Implement the initial relational data model.
+- Initialize the Next.js Pages Router application.
+- Configure JavaScript.
+- Configure Tailwind CSS.
+- Configure Prisma.
+- Connect PostgreSQL/NeonDB.
+- Configure Jest.
+- Configure environment files.
+- Establish Git conventions.
+- Create the Python data-science workspace.
+- Document Node.js and Python setup.
 
-Tasks:
+### Deliverables
 
-- [ ] Finalize entity definitions.
-- [ ] Define Product.
-- [ ] Define NavigationEvent.
-- [ ] Define Order.
-- [ ] Define OrderItem.
-- [ ] Define ImportJob.
-- [ ] Define IoTTelemetry.
-- [ ] Establish relationships.
-- [ ] Establish unique constraints.
-- [ ] Establish indexes.
-- [ ] Implement Prisma migrations.
-- [ ] Validate the schema using representative records.
+- Working application shell.
+- Database connection.
+- Test setup.
+- Python environment.
+- Initial repository documentation.
 
-**Deliverable:** Initial functional database schema.
+### Completion criteria
 
-**Completion criteria:** Migrations execute successfully and entity relationships behave as expected.
+The web application runs locally, database connectivity works, and JavaScript and Python test workflows can execute.
 
----
+## Phase 2 — Database Design and Authentication
 
-## Phase 3 — Synthetic Data and Data Ingestion
+### Tasks
 
-**Objective:** Establish a reliable data acquisition and processing pipeline.
+- Convert the approved relational model into Prisma.
+- Define enums and constraints.
+- Implement Store, User, AuthSession, and PasswordResetToken.
+- Implement Category and Product.
+- Implement DataSource and ImportJob.
+- Implement VisitorSession, Event, Order, and OrderItem.
+- Implement initial IoT entities.
+- Implement Recommendation and IndicatorTarget.
+- Add experiment metadata if needed.
+- Create and validate migrations.
+- Implement authentication and role-based access.
+- Test store-level access isolation.
 
-Tasks:
+### Deliverables
 
-- [ ] Define CSV import formats.
-- [ ] Prepare synthetic e-commerce dataset.
-- [ ] Implement CSV parsing.
-- [ ] Implement structural validation.
-- [ ] Implement record validation.
-- [ ] Implement data normalization.
-- [ ] Implement duplicate detection.
-- [ ] Implement transactional persistence.
-- [ ] Implement bounded batch processing.
-- [ ] Implement import history.
-- [ ] Implement import error reporting.
-- [ ] Create Jest tests for the pipeline.
+- Prisma schema.
+- Database migrations.
+- Authentication module.
+- Initial database tests.
 
-**Deliverable:** Functional e-commerce data ingestion.
+### Completion criteria
 
-**Completion criteria:** Valid datasets are imported, invalid records are handled, and repeated imports do not duplicate data.
+The schema represents the approved model and the application can securely authenticate dashboard users.
 
----
+## Phase 3 — Dataset Acquisition and Data Dictionary
 
-## Phase 4 — Analytics Engine
+### Tasks
 
-**Objective:** Implement reliable business intelligence calculations.
+- Obtain the selected e-commerce dataset.
+- Obtain or generate the IoT dataset.
+- Record provenance and licensing.
+- Document dataset volume, format, variables, and time coverage.
+- Classify variables by measurement scale.
+- Define raw, interim, processed, and feature dataset conventions.
+- Define quality rules.
+- Establish representative test fixtures.
 
-Tasks:
+### Deliverables
 
-- [ ] Implement visits calculation.
-- [ ] Implement product view calculation.
-- [ ] Implement add-to-cart calculation.
-- [ ] Implement checkout initiation calculation.
-- [ ] Implement completed order calculation.
-- [ ] Implement conversion rate.
-- [ ] Implement checkout abandonment rate.
-- [ ] Implement average order value.
-- [ ] Implement gross revenue aggregation.
-- [ ] Implement daily aggregations.
-- [ ] Implement product performance aggregation.
-- [ ] Implement category aggregation.
-- [ ] Implement date filtering.
-- [ ] Implement category filtering.
-- [ ] Create comprehensive Jest tests.
+- Dataset documentation.
+- Data dictionary.
+- Variable classification.
+- Data-quality specification.
+- Reproducible acquisition instructions.
 
-**Deliverable:** Reusable analytical services.
+### Completion criteria
 
-**Completion criteria:** All indicators match independently verified expected results.
+The team can reproduce dataset acquisition and explain the semantics and measurement scale of each relevant variable.
 
----
+## Phase 4 — Data Ingestion and Preprocessing
 
-## Phase 5 — Dashboard Development
+### Tasks
 
-**Objective:** Build the user-facing analytical application.
+- Implement CSV parsing.
+- Implement source schema validation.
+- Implement type conversion.
+- Normalize categories, timestamps, and units.
+- Handle missing and invalid values.
+- Detect duplicates.
+- Define rejection and quarantine behavior.
+- Implement idempotent ingestion.
+- Persist valid records in bounded batches.
+- Record import history and quality statistics.
+- Implement Python chunk processing or incremental reading where justified.
+- Record processing time and memory considerations where relevant.
 
-Tasks:
+### Deliverables
 
-- [ ] Establish dashboard layout.
-- [ ] Implement navigation.
-- [ ] Implement reusable KPI cards.
-- [ ] Implement Overview.
-- [ ] Implement Sales Funnel.
-- [ ] Implement Products & Performance.
-- [ ] Implement Customer Behavior.
-- [ ] Implement Settings & Data Management.
-- [ ] Integrate API endpoints.
-- [ ] Implement date filters.
-- [ ] Implement category filters.
-- [ ] Add loading and error states.
-- [ ] Ensure responsive behavior.
+- E-commerce ingestion pipeline.
+- IoT ingestion pipeline.
+- Preprocessing scripts.
+- Import history.
+- Data-quality report.
 
-**Deliverable:** Functional dashboard connected to real analytical queries.
+### Completion criteria
+
+The pipeline can process the selected data reproducibly, explain rejected records, and demonstrate its strategy for handling the chosen data volume.
 
-**Completion criteria:** All principal dashboard screens display consistent database-derived information.
+## Phase 5 — Exploratory and Statistical Analysis
 
----
+### Tasks
 
-## Phase 6 — Business Intelligence
+- Analyze distributions and missingness.
+- Evaluate duplicates and outliers.
+- Calculate descriptive statistics using valid measurement scales.
+- Analyze temporal patterns.
+- Analyze customer and product behavior.
+- Analyze telemetry trends.
+- Produce correlation and multivariate analysis where appropriate.
+- Document limitations and potential bias.
 
-**Objective:** Transform analytical results into useful business recommendations.
+### Deliverables
 
-Tasks:
+- Exploratory analysis notebooks.
+- Repeatable analysis scripts.
+- Statistical findings.
+- Visualizations for academic evidence.
 
-- [ ] Define recommendation rules.
-- [ ] Identify high-interest, low-conversion products.
-- [ ] Detect funnel bottlenecks.
-- [ ] Identify unusual conversion changes.
-- [ ] Generate contextual recommendations.
-- [ ] Establish recommendation priorities.
-- [ ] Add supporting metrics to each recommendation.
-- [ ] Implement previous-period comparisons.
-- [ ] Implement store health indicator, if justified by defined criteria.
+### Completion criteria
 
-**Deliverable:** Rule-based recommendation engine.
+The team can explain the dataset's structure, quality, important patterns, and the statistical methods used.
 
-**Completion criteria:** Recommendations are generated from measurable conditions and can be independently tested.
+## Phase 6 — Machine-Learning Modeling
 
----
+### Tasks
 
-## Phase 7 — Simulated IoT Integration
+- Finalize the ML problem and target.
+- Define the observation unit and prediction horizon.
+- Prepare features.
+- Prevent target leakage.
+- Establish a baseline.
+- Split training, validation, and test data appropriately.
+- Train candidate models.
+- Compare generalization performance.
+- Investigate overfitting and underfitting.
+- Select appropriate evaluation metrics.
+- Record model configuration and results.
+- Save reproducible model artifacts.
 
-**Objective:** Demonstrate an independent IoT data acquisition source.
+### Deliverables
 
-Tasks:
+- ML problem specification.
+- Training and evaluation scripts.
+- Baseline results.
+- Final model and evaluation report.
+- Versioned experiment metadata.
 
-- [ ] Define the simulated device.
-- [ ] Define telemetry types and units.
-- [ ] Define the payload contract.
-- [ ] Implement telemetry generator.
-- [ ] Implement HTTP transmission.
-- [ ] Implement telemetry API endpoint.
-- [ ] Validate incoming payloads.
-- [ ] Persist telemetry through Prisma.
-- [ ] Test invalid and valid measurements.
-- [ ] Demonstrate telemetry integration with the data layer.
+### Completion criteria
 
-**Deliverable:** Functional simulated IoT ingestion component.
+At least one model has been trained and evaluated with a defensible methodology and documented limitations.
+
+## Phase 7 — Analytics Engine
 
-**Completion criteria:** The simulator generates and transmits telemetry, and valid records are stored in PostgreSQL.
+### Tasks
 
----
+- Implement centralized KPI calculations.
+- Implement session-based funnel calculations.
+- Implement order and revenue calculations.
+- Implement product/category aggregations.
+- Implement customer behavior aggregations.
+- Implement IoT aggregations.
+- Implement rule-based recommendations.
+- Implement indicator-target comparisons.
+- Test calculations against known fixtures.
 
-## Phase 8 — Machine Learning Experimentation
+### Deliverables
 
-**Objective:** Evaluate a predictive model relevant to e-commerce behavior.
+- Analytics services.
+- Recommendation engine.
+- Tested database queries.
+- Documented metric definitions.
 
-Tasks:
+### Completion criteria
 
-- [ ] Research suitable public e-commerce datasets.
-- [ ] Select and document the dataset.
-- [ ] Perform exploratory data analysis.
-- [ ] Define prediction target.
-- [ ] Prepare features.
-- [ ] Establish a baseline classifier.
-- [ ] Train the selected model.
-- [ ] Evaluate classification performance.
-- [ ] Document limitations and potential biases.
-- [ ] Define integration strategy.
-- [ ] Integrate predictions if feasible.
+The application returns consistent analytical results with explicit date, store, and attribution semantics.
 
-**Deliverable:** Documented and evaluated predictive model.
+## Phase 8 — Interactive Dashboard
 
-**Completion criteria:** The model has a reproducible evaluation and its limitations are clearly explained.
+### Tasks
 
----
+- Implement global application layout.
+- Implement login and role-aware navigation.
+- Implement Overview.
+- Implement Sales Funnel.
+- Implement Products & Stock Indicators.
+- Implement Product Details.
+- Implement Customer Behavior.
+- Implement IoT Analytics.
+- Implement Machine Learning.
+- Implement Settings.
+- Add global store and date filters.
+- Add category and page-specific filters.
+- Add CSV export.
+- Add PDF export if time permits.
+- Implement loading, empty, and error states.
 
-## Phase 9 — Testing and Validation
+### Deliverables
 
-**Objective:** Validate the prototype technically and with the external community.
+- Functional interactive dashboard.
+- Dynamic charts.
+- Filtered analytics.
+- Model and telemetry visualization.
 
-Tasks:
+### Completion criteria
 
-- [ ] Run all unit tests.
-- [ ] Run integration tests.
-- [ ] Test data ingestion.
-- [ ] Test KPI consistency.
-- [ ] Test funnel calculations.
-- [ ] Test dashboard filters.
-- [ ] Test API error handling.
-- [ ] Test simulated IoT ingestion.
-- [ ] Test responsive layouts.
-- [ ] Perform end-to-end workflow checks.
-- [ ] Present the prototype to the partner business.
-- [ ] Collect evaluation feedback.
-- [ ] Incorporate relevant improvements.
+An evaluator can interact with the application, change filters, select sources or devices, and observe updated results rather than static outputs.
 
-**Deliverable:** Validated prototype with recorded test evidence and user feedback.
+## Phase 9 — Recommendations, Validation, and Performance
 
-**Completion criteria:** Core requirements are functional and the validation activities are documented.
+### Tasks
 
----
+- Validate recommendations against indicator targets.
+- Validate dashboard results against independent calculations.
+- Test role permissions.
+- Test store isolation.
+- Test import retries and duplicates.
+- Evaluate query performance with representative data volume.
+- Evaluate large-scale processing behavior.
+- Review visualizations and accessibility.
+- Validate the complete pipeline from source to interface.
+- Conduct a demonstration using realistic data.
 
-## Phase 10 — Deployment and Final Documentation
+### Deliverables
 
-**Objective:** Deliver the final working prototype.
+- Test reports.
+- Validation evidence.
+- Performance observations.
+- End-to-end demonstration dataset.
 
-Tasks:
+### Completion criteria
 
-- [ ] Configure production NeonDB.
-- [ ] Configure Vercel environment variables.
-- [ ] Deploy application.
-- [ ] Execute production migrations.
-- [ ] Load demonstration data.
-- [ ] Verify production functionality.
-- [ ] Prepare application screenshots.
-- [ ] Document architecture.
-- [ ] Document data pipeline.
-- [ ] Document machine learning experimentation.
-- [ ] Document IoT acquisition.
-- [ ] Record final limitations.
-- [ ] Update README.
+The team can demonstrate the complete system and provide evidence that its outputs are correct and its data processing is reproducible.
 
-**Deliverable:** Deployed Merchant Pulse prototype and completed technical documentation.
+## Phase 10 — Deployment and Academic Documentation
 
-**Completion criteria:** The application is accessible through Vercel and the final implementation is documented.
+### Tasks
 
----
+- Deploy the Next.js application to Vercel.
+- Configure NeonDB production connection.
+- Configure environment variables.
+- Define how Python processing and model artifacts are executed and accessed.
+- Prepare a reproducible demonstration.
+- Document architecture and data flow.
+- Document preprocessing decisions.
+- Document statistical analysis.
+- Document IoT ingestion.
+- Document ML methodology and metrics.
+- Document dashboard functionality.
+- Record limitations and future work.
+- Prepare final academic presentation and report.
 
-## Development Rules
+### Deliverables
 
-1. Complete prerequisite phases before dependent implementation.
-2. Every business calculation must have automated tests.
-3. Database schema changes must use Prisma migrations.
-4. Every new data source must have a documented input contract.
-5. Architecture changes require project owner approval.
-6. Documentation must reflect actual implementation.
-7. Do not mark tasks complete without verification.
+- Deployed application.
+- Reproducibility instructions.
+- Final technical documentation.
+- Academic evidence and presentation.
 
-## Priority
+### Completion criteria
 
-The initial development priority is:
+The final submission demonstrates the mandatory academic requirements and provides a working interactive application.
 
-1. Project foundation.
-2. Database design.
-3. Data ingestion.
-4. Analytics engine.
-5. Dashboard.
-6. Business intelligence.
+## Priority Guidance
 
-IoT and machine learning are additional project deliverables and should be implemented after the core data architecture is stable.
+The most important risk is postponing data and methodology decisions until after the dashboard has been built.
 
-Testing and documentation must accompany every phase rather than being postponed until the end.
+Prioritize:
+
+1. Dataset selection and scale.
+2. Variable classification and data-quality rules.
+3. IoT data acquisition.
+4. ML problem definition.
+5. Data model and metric semantics.
+6. Ingestion and preprocessing.
+7. Analytics.
+8. Interactive dashboard.
+9. Validation and academic evidence.
+
+Do not spend disproportionate time polishing dashboard screens before confirming that the underlying data pipeline and analytical methods are valid.

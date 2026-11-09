@@ -1,395 +1,406 @@
-# Merchant Pulse — Technical Architecture
+# Merchant Pulse — Architecture
 
-## 1. Architectural Overview
+**Version:** 0.2
 
-Merchant Pulse follows a **modular monolithic architecture**.
+## 1. Architectural Goals
 
-The application consists of one Next.js project, one PostgreSQL database, and internally separated modules responsible for data ingestion, analytics, recommendations, and visualization.
+The architecture must support:
 
-The architecture prioritizes simplicity, maintainability, and compatibility with Vercel deployment.
+- A complete data pipeline.
+- E-commerce and IoT ingestion.
+- Large-scale preprocessing and analysis.
+- Machine-learning experimentation and evaluation.
+- Interactive business dashboards.
+- Maintainability by a small academic team.
+- Deployment with the selected technology stack.
 
-Microservices are not required.
+The architecture should remain as simple as possible without compromising the academic requirements.
 
-## 2. Technology Decisions
+## 2. Architecture Style
 
-| Concern              | Decision           |
-| -------------------- | ------------------ |
-| Framework            | Next.js            |
-| Router               | Pages Router       |
-| Programming language | JavaScript         |
-| Frontend             | React              |
-| Styling              | Tailwind CSS       |
-| Charts               | Recharts           |
-| Backend              | Next.js API Routes |
-| ORM                  | Prisma             |
-| Database             | PostgreSQL         |
-| Hosting              | NeonDB             |
-| Deployment           | Vercel             |
-| Testing              | Jest               |
+Use a **modular monolith** for the application, complemented by a Python data-science workspace.
 
-### Additional libraries
+The web application remains one Next.js project with logically separated modules. PostgreSQL is the central persistent database.
 
-The following libraries are proposed:
+Python scripts and notebooks handle data-science workflows that are not appropriate to implement inside request/response web handlers.
 
-- Zod: input and dataset validation.
-- Papa Parse: CSV parsing.
-- date-fns: date manipulation.
-- Recharts: data visualization.
+This is not a microservices architecture.
 
-Dependencies must be introduced only when they provide a concrete benefit.
+## 3. Technology Responsibilities
 
-## 3. Logical Architecture
+| Technology           | Responsibility                                 |
+| -------------------- | ---------------------------------------------- |
+| Next.js Pages Router | Web application and API Routes                 |
+| JavaScript           | Application implementation                     |
+| React                | Interactive interface                          |
+| Tailwind CSS         | Styling                                        |
+| Recharts             | Dashboard charts                               |
+| Prisma               | Database access and migrations                 |
+| PostgreSQL / NeonDB  | Persistent data                                |
+| Python               | Data preparation, analysis, and ML             |
+| Pandas               | Tabular processing where appropriate           |
+| Scikit-learn         | Machine-learning experiments where appropriate |
+| Jest                 | JavaScript unit and integration tests          |
+| Vercel               | Web application deployment                     |
 
-The application is organized into four logical layers.
+Python dependencies should be managed independently from the Node.js dependencies.
 
-### 3.1 Data Sources
+Do not add a second application backend or GUI framework without a clear requirement. The Next.js dashboard is the primary GUI. Python is the data-science execution environment.
 
-Responsible for providing information to Merchant Pulse.
+## 4. Logical Architecture
 
-Sources include:
+```mermaid
+flowchart TD
+    A["Data Sources"]
+    A1["E-commerce CSV / API"]
+    A2["Synthetic E-commerce Data"]
+    A3["IoT Simulator / Public IoT Dataset"]
 
-- Synthetic e-commerce datasets.
-- Authorized CSV exports from the partner's e-commerce platform.
-- Simulated IoT telemetry.
+    B["Acquisition and Ingestion"]
+    C["Raw Data"]
+    D["Validation and Preprocessing"]
+    E["Cleaned / Processed Data"]
+    F["Feature Engineering"]
+    G["Analytics and Machine Learning"]
+    H["PostgreSQL / NeonDB"]
+    I["Next.js API Routes"]
+    J["Interactive Dashboard"]
 
-Each source must have a clearly defined input format.
-
-### 3.2 Data Processing
-
-Responsible for transforming incoming information into consistent records.
-
-Responsibilities:
-
-- Data ingestion.
-- Structural validation.
-- Field normalization.
-- Duplicate detection.
-- Data cleaning.
-- Persistence.
-- Import history.
-
-The processing layer must be independent of the dashboard interface.
-
-### 3.3 Analytics
-
-Responsible for extracting meaningful information from stored records.
-
-Modules:
-
-- Overview analytics.
-- Funnel analytics.
-- Product analytics.
-- Customer behavior analytics.
-- Recommendation engine.
-- Machine learning integration.
-
-Analytical calculations must be centralized and reusable.
-
-### 3.4 Visualization
-
-Responsible for presenting analytical information to the user.
-
-Responsibilities:
-
-- Dashboard screens.
-- KPI cards.
-- Charts.
-- Tables.
-- Filters.
-- Reports.
-- Data management interfaces.
-
-The frontend must consume processed results through backend services and API endpoints.
-
-## 4. Application Architecture
-
-The application follows this general request flow:
-
-```text
-USER
-  |
-  v
-NEXT.JS FRONTEND
-  |
-  v
-NEXT.JS API ROUTES
-  |
-  v
-APPLICATION SERVICES
-  |
-  +----------------------+
-  |                      |
-  v                      v
-DATA SERVICES       ANALYTICS SERVICES
-  |                      |
-  v                      v
-PRISMA ORM          BUSINESS CALCULATIONS
-  |                      |
-  +-----------+----------+
-              |
-              v
-          POSTGRESQL
-            NEONDB
+    A --> A1
+    A --> A2
+    A --> A3
+    A1 --> B
+    A2 --> B
+    A3 --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    E --> H
+    G --> H
+    H --> I
+    I --> J
 ```
 
-External data acquisition follows a separate ingestion flow:
+This is a logical flow, not a requirement to store every intermediate dataset in PostgreSQL. Large raw files and intermediate analytical artifacts may remain in a file-based data workspace when appropriate.
 
-```text
-CSV DATASET -----------+
-                       |
-IOT SIMULATOR ---------+----> INGESTION MODULE
-                       |             |
-AUTHORIZED EXPORT -----+             v
-                                VALIDATION
-                                     |
-                                     v
-                                TRANSFORMATION
-                                     |
-                                     v
-                                  PRISMA
-                                     |
-                                     v
-                                POSTGRESQL
-```
+## 5. Web Application Modules
 
-## 5. Proposed Source Structure
+Suggested application structure:
 
 ```text
 src/
-│
-├── pages/
-│   ├── index.js
-│   ├── dashboard/
-│   │   ├── index.js
-│   │   ├── funnel.js
-│   │   ├── products.js
-│   │   ├── behavior.js
-│   │   └── settings.js
-│   │
-│   └── api/
-│       ├── analytics/
-│       │   ├── overview.js
-│       │   ├── funnel.js
-│       │   ├── products.js
-│       │   └── behavior.js
-│       │
-│       ├── imports/
-│       │   ├── index.js
-│       │   └── [id].js
-│       │
-│       └── iot/
-│           └── telemetry.js
-│
-├── components/
-│   ├── layout/
-│   ├── dashboard/
-│   ├── charts/
-│   ├── metrics/
-│   └── ui/
-│
-├── services/
-│   ├── analytics/
-│   ├── imports/
-│   ├── recommendations/
-│   └── iot/
-│
-├── lib/
-│   ├── prisma.js
-│   ├── validation/
-│   └── constants/
-│
-├── utils/
-│   ├── dates/
-│   └── analytics/
-│
-└── styles/
+  pages/
+    index.js
+    login.js
+    dashboard/
+      index.js
+      funnel.js
+      products/
+        index.js
+        [id].js
+      behavior.js
+      iot.js
+      machine-learning.js
+      settings/
+        index.js
+        sources.js
+        users.js
+        targets.js
+        stores.js
+    api/
+      auth/
+      analytics/
+      imports/
+      iot/
+      recommendations/
+      machine-learning/
+  components/
+    layout/
+    dashboard/
+    charts/
+    metrics/
+    forms/
+    ui/
+  services/
+    auth/
+    analytics/
+    imports/
+    recommendations/
+    iot/
+    machine-learning/
+  lib/
+    prisma.js
+    validation/
+    constants/
+  utils/
+    dates/
+    analytics/
+    formatting/
+  styles/
 ```
 
-This is the initial target structure. It may evolve as implementation progresses, provided the architectural principles remain intact.
-
-## 6. Backend Responsibilities
-
-### API Routes
-
-API routes are responsible for:
-
-- Receiving requests.
-- Validating parameters.
-- Calling application services.
-- Returning structured responses.
-- Handling errors and HTTP status codes.
-
-API routes must not contain complex business calculations.
-
-### Application Services
-
-Services contain the application's business logic.
-
-Examples:
-
-- `overview.service.js`
-- `funnel.service.js`
-- `products.service.js`
-- `behavior.service.js`
-- `recommendations.service.js`
-- `import.service.js`
-- `iot.service.js`
-
-Services should remain independent of React components.
-
-### Prisma Client
-
-The application must use a centralized Prisma client.
-
-Database access should be performed through Prisma unless a justified analytical SQL query is necessary.
-
-Raw SQL is acceptable for optimized aggregations or PostgreSQL-specific operations, but it must be parameterized and tested.
-
-## 7. Data Pipeline Architecture
-
-The ingestion pipeline follows these stages:
-
-1. Receive input.
-2. Parse the source format.
-3. Validate structure and records.
-4. Normalize fields.
-5. Detect duplicates.
-6. Persist valid records.
-7. Record errors and processing statistics.
-8. Mark the import as completed, partially completed, or failed.
-
-The pipeline must be deterministic and designed to avoid duplicate persistence.
-
-Large imports must be processed in bounded batches.
-
-Vercel functions must not be treated as permanent background workers.
-
-If processing eventually exceeds execution limits, asynchronous job execution can be introduced as a separate architectural enhancement.
-
-## 8. Analytics Architecture
-
-Each analytical module must expose reusable service functions.
-
-Example:
-
-```javascript
-const result = await overviewService.getOverview({
-  startDate,
-  endDate,
-  category,
-});
-```
-
-The service is responsible for querying and aggregating the necessary records.
-
-The frontend receives structured results rather than raw database entities.
-
-Business calculations must not be duplicated across frontend components and API routes.
-
-## 9. IoT Architecture
-
-IoT is an independent data acquisition module.
-
-A simulator generates timestamped telemetry and transmits measurements through an HTTP endpoint.
+Python workspace:
 
 ```text
-IOT SIMULATOR
-     |
-     v
-HTTP POST
-     |
-     v
-NEXT.JS API
-     |
-     v
-IOT SERVICE
-     |
-     v
-VALIDATION
-     |
-     v
-POSTGRESQL
+data-science/
+  README.md
+  requirements.txt
+  data/
+    raw/
+    interim/
+    processed/
+    features/
+  notebooks/
+  src/
+    ingestion/
+    preprocessing/
+    analysis/
+    features/
+    models/
+    evaluation/
+  reports/
+  artifacts/
 ```
 
-IoT telemetry must have its own data model and validation rules.
+Do not commit sensitive datasets, credentials, or large generated artifacts without an explicit repository policy. Document how to obtain or regenerate required data.
 
-It must not be mixed with e-commerce navigation events.
+## 6. Authentication and Sessions
 
-The simulator should be independently executable and should not require physical hardware.
+Dashboard authentication is independent of e-commerce visitor tracking.
 
-## 10. Machine Learning Architecture
+Adapt the established PI-II authentication approach to Merchant Pulse, keeping only relevant concepts:
 
-Machine learning must remain independent of the core analytics services.
+- `User`
+- `AuthSession`
+- `PasswordResetToken`
+- `UserRole`
 
-The proposed workflow is:
+Suggested roles:
 
-```text
-PUBLIC E-COMMERCE DATASET
-          |
-          v
-    PREPROCESSING
-          |
-          v
-    MODEL TRAINING
-          |
-          v
-      EVALUATION
-          |
-          v
-   MODEL PREDICTIONS
-          |
-          v
- MERCHANT PULSE INTEGRATION
-```
+- `ADMIN`
+- `MANAGER`
+- `ANALYST`
 
-The initial candidate is a classification model for purchase intention or abandonment.
+The user belongs to a store in the initial relational model. If cross-store administrators are required, their access model must be explicitly designed rather than assumed.
 
-Training should be performed independently of Next.js.
+The authentication session stores a hashed session token, user reference, expiry, and timestamps. Passwords must be stored as secure password hashes, never plaintext.
 
-The application may consume precomputed predictions or an exposed inference interface, depending on the final implementation decision.
+The PI-II-specific department, process, document, approval, publication, and audit relations are not part of Merchant Pulse unless separately justified.
 
-A trained model must be evaluated before its predictions are presented as useful business intelligence.
+Do not confuse `AuthSession` with `VisitorSession`:
 
-## 11. Database Architecture
+- `AuthSession` identifies a person logged into the Merchant Pulse dashboard.
+- `VisitorSession` represents an anonymized e-commerce browsing session used for analytics.
 
-PostgreSQL is the centralized persistence layer.
+## 7. Data Acquisition and Ingestion
 
-Prisma ORM manages:
+The ingestion layer accepts data from:
 
-- Entity definitions.
-- Relationships.
-- Database migrations.
-- Application queries.
-- Data persistence.
+- CSV files.
+- APIs, if a suitable source is available.
+- Synthetic e-commerce generators.
+- IoT simulators or public telemetry datasets.
 
-The database must support indexed filtering and aggregation.
+Each import must be associated with a data source and recorded in the import history.
 
-Date, session, event type, product, and relationship fields should be considered when designing indexes.
+The pipeline should follow:
 
-## 12. Deployment Architecture
+1. Receive source data.
+2. Identify source format and expected schema.
+3. Parse records.
+4. Validate required fields and data types.
+5. Normalize categories, timestamps, and units.
+6. Detect duplicates.
+7. Reject or quarantine invalid records.
+8. Persist valid records in bounded batches.
+9. Record import statistics and errors.
 
-The intended deployment is:
+Imports should be idempotent where possible. A retry must not silently duplicate previously imported events.
 
-- Next.js application: Vercel.
-- Database: NeonDB PostgreSQL.
-- Source code: GitHub.
-- Environment configuration: Vercel environment variables.
+Use source event IDs or deterministic idempotency keys where available. Do not rely solely on timestamps and values if they cannot uniquely identify a record.
 
-Development, testing, and production environments must be isolated.
+## 8. Large-Scale Processing
 
-Database credentials must never be committed to the repository.
+Large-scale preprocessing and model training belong in Python workflows, not in ordinary Next.js API requests.
 
-## 13. Architectural Restrictions
+The Python pipeline must:
 
-Agents must not introduce the following without explicit approval:
+- Record input and output dataset sizes.
+- Use efficient data types.
+- Avoid loading unnecessarily large files entirely into memory.
+- Use chunk processing or incremental reading when appropriate.
+- Document sampling strategies and sampling limitations.
+- Preserve reproducibility through configuration and random seeds.
+- Save processing metadata and experiment results.
+
+Sampling is not automatically required. Use the complete dataset when practical. If sampling is necessary, explain how it was performed and whether it preserves the distributions and patterns relevant to the analysis.
+
+The final dataset may be stored in PostgreSQL for application queries while raw and intermediate analytical files remain in the Python workspace.
+
+## 9. Preprocessing and Statistical Analysis
+
+Preprocessing must be explicit and reproducible.
+
+Each dataset should have a data dictionary containing:
+
+- Variable name.
+- Description.
+- Data type.
+- Measurement scale.
+- Allowed values or units.
+- Missing-value policy.
+- Transformation applied.
+- Analytical role.
+
+Categorical codes must remain categorical. For example, `0 = mobile`, `1 = desktop`, and `2 = tablet` must not be averaged as if they represented a numeric measurement.
+
+Outlier handling must be justified. Retain meaningful extreme events unless there is evidence that they are corrupted.
+
+## 10. Machine-Learning Workflow
+
+Machine learning is a mandatory project deliverable.
+
+The workflow:
+
+1. Define the problem and target.
+2. Select a suitable dataset.
+3. Define the observation unit.
+4. Prevent target leakage.
+5. Prepare features.
+6. Establish a baseline.
+7. Split data into training, validation, and test sets.
+8. Train candidate models.
+9. Evaluate generalization.
+10. Compare results and document limitations.
+11. Save model metadata and reproducible artifacts.
+12. Expose relevant results in the dashboard.
+
+For time-dependent data, use a chronological split where appropriate. Do not randomly mix future information into training when the real use case predicts future behavior.
+
+Use training and validation performance to investigate overfitting and underfitting.
+
+Metrics must match the task:
+
+- Regression: MAE, RMSE, optionally R².
+- Classification: precision, recall, F1-score, confusion matrix, and suitable ranking metrics.
+- Clustering: justified internal or external clustering evaluation, where applicable.
+
+The dashboard must clearly distinguish model performance metrics from business KPIs.
+
+## 11. IoT Architecture
+
+IoT ingestion is independent from e-commerce events and orders.
+
+The simulator or public data source generates timestamped measurements. The ingestion endpoint or batch importer validates and persists them in dedicated telemetry structures.
+
+A telemetry record should identify:
+
+- Store or owning context, when applicable.
+- Device or source.
+- Measurement type.
+- Numeric value.
+- Unit.
+- Measurement timestamp.
+- Ingestion timestamp.
+- Data-quality or validation status, where needed.
+- Import/source reference.
+
+The final measurement types and their analytical purpose remain open.
+
+The simulator must produce plausible time-series data with documented generation rules. It must not merely populate charts with hardcoded display values.
+
+## 12. Analytics and Recommendations
+
+Business calculations must live in centralized services or parameterized analytical queries.
+
+React components should not implement business formulas.
+
+API Routes should validate inputs, enforce access rules, call services, and return prepared results.
+
+Rule-based recommendations must be explainable and traceable to:
+
+- The rule identifier.
+- The metric evaluated.
+- The target or threshold.
+- The relevant period.
+- The affected store or product.
+- The suggested action.
+
+Recommendations are not machine-learning predictions.
+
+## 13. Interactive Dashboard
+
+The dashboard must support dynamic interaction.
+
+Global filters should include:
+
+- Store.
+- Date range.
+- Category where relevant.
+
+Page-specific filters may include:
+
+- Device.
+- Traffic source.
+- Product.
+- IoT device or telemetry source.
+- Measurement type.
+- ML model or prediction parameters.
+
+The charts must update from actual query results based on active filters.
+
+Suggested visualizations include:
+
+- KPI cards.
+- Funnel charts.
+- Time-series charts.
+- Product/category rankings.
+- Heatmaps for day and hour.
+- Box plots for distributions and outliers.
+- Scatter plots for relationships.
+- Correlation heatmaps where statistically justified.
+- Model evaluation charts and confusion matrices.
+
+Do not add advanced plots solely for appearance. Each visualization must answer a defined analytical question.
+
+## 14. Database and Prisma
+
+Prisma is the standard ORM.
+
+Use a centralized Prisma client and migrations for schema changes.
+
+Use raw SQL selectively for analytical aggregations, PostgreSQL-specific features, or queries that Prisma cannot express efficiently.
+
+Database constraints and indexes must reflect actual query patterns.
+
+The collaborator's SQL includes PostgreSQL views and functions. These may be implemented through SQL migration files where useful. Do not assume every view or generated column can be represented directly in the Prisma schema.
+
+Prefer parameterized queries and test analytical queries with representative data volumes.
+
+## 15. Deployment
+
+The Next.js application is deployed on Vercel and uses NeonDB.
+
+Vercel functions are request-oriented and must not be treated as permanent background workers.
+
+Large imports and model training should not be executed as unbounded work inside a dashboard request. They belong in bounded scripts or an explicitly designed execution process.
+
+The deployment plan must document where Python processing and model artifacts execute and how the web application accesses the resulting data.
+
+## 16. Architectural Restrictions
+
+Do not introduce without justification:
 
 - Microservices.
-- A separate backend framework.
-- TypeScript.
-- App Router migration.
-- Redis or message brokers.
-- Permanent background workers.
-- Unnecessary state management libraries.
-- Complex multi-tenant architecture.
+- Express or a second web backend.
+- Redis.
+- Message brokers.
+- Permanent workers.
+- Complex state-management frameworks.
+- Full inventory-management workflows.
+- Physical IoT hardware as a requirement.
+- A second dashboard framework duplicating the Next.js GUI.
 
-Any architectural change must include its motivation, benefits, and trade-offs in the relevant documentation.
+Keep the architecture modular, testable, and appropriate for a small academic team.
