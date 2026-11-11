@@ -11,6 +11,8 @@
     "docker:dev:down": "docker compose -f src/infra/compose.yaml down",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:seed": "node scripts/seed-admin.js",
+    "db:seed:admin": "node scripts/seed-admin.js",
     "db:studio": "prisma studio"
   },
   "dependencies": {
@@ -18,6 +20,7 @@
     "@neon/env": "^2.1.0",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "bcryptjs": "3.0.3",
     "dotenv": "^18.0.9",
     "next": "16.4.5",
     "next-connect": "1.0.0",

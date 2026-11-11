@@ -27,21 +27,21 @@ Merchant Pulse is an **analytics and decision-support application**, not an e-co
 
 It does not replace the partner's sales platform, process payments, manage orders operationally, or provide inventory management.
 
-The initial demonstration uses one store. The underlying data model retains a simple store relationship so the application can represent additional stores without introducing a complex SaaS or multi-tenant architecture.
+Merchant Pulse is a single-store application: it analyzes the data of one e-commerce business. The data model has no store or tenant entity.
 
 ### Main application modules
 
-| Module                  | Purpose                                                                     |
-| ----------------------- | --------------------------------------------------------------------------- |
-| Overview                | Main business indicators, trends, funnel summary, and recommendations       |
-| Sales Funnel            | Five-stage purchase journey and conversion losses                           |
-| Products & Performance  | Product and category performance, with optional read-only stock information |
-| Product Detail          | Detailed navigation and sales indicators for a selected product             |
-| Customer Behavior       | Navigation patterns by day, hour, device, and traffic source                |
-| Data Sources & Pipeline | Data imports, processing status, and data-quality reports                   |
-| IoT Monitoring          | Warehouse temperature, humidity, and energy telemetry                       |
-| Demand Forecasting      | Category-level daily demand predictions and model evaluation                |
-| Settings                | Store configuration, dashboard users, targets, and data-source settings     |
+| Module                  | Purpose                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| Overview                | Main business indicators, trends, funnel summary, and recommendations         |
+| Sales Funnel            | Five-stage purchase journey and conversion losses                             |
+| Products & Performance  | Product and category performance, with optional read-only stock information   |
+| Product Detail          | Detailed navigation and sales indicators for a selected product               |
+| Customer Behavior       | Navigation patterns by day, hour, device, and traffic source                  |
+| Data Sources & Pipeline | Data imports, processing status, and data-quality reports                     |
+| IoT Monitoring          | Warehouse temperature, humidity, and energy telemetry                         |
+| Demand Forecasting      | Category-level daily demand predictions and model evaluation                  |
+| Settings                | Application configuration, dashboard users, targets, and data-source settings |
 
 Global filters include date range and product category where applicable. Exports must respect the active filters and must not expose consumer personal information.
 
@@ -178,7 +178,7 @@ The initial IoT ingestion path uses HTTP requests to a Next.js API route. A mess
 - Treat hashes as pseudonymous data, not as a guarantee of anonymization.
 - Keep dashboard authentication separate from visitor tracking.
 - Store only hashed authentication tokens.
-- Apply store scoping to application queries.
+- Enforce role-based authorization in application queries.
 - Restrict administrative settings to authorized roles.
 - Ensure exports exclude consumer personal information.
 
@@ -186,6 +186,7 @@ The initial IoT ingestion path uses HTTP requests to a Next.js API route. A mess
 
 ```text
 merchant-pulse/
+├── scripts/
 ├── src/
 │   ├── components/
 │   ├── features/
@@ -231,6 +232,51 @@ The structure is a target organization. It may evolve as implementation reveals 
 - Do not fabricate model metrics, validation results, or business outcomes.
 - Keep documentation aligned with the actual implementation.
 
+## Development setup
+
+### Prerequisites
+
+- Node.js (see `.nvmrc`)
+- Docker and Docker Compose (for the local PostgreSQL container)
+
+### 1. Database setup
+
+Start the local development PostgreSQL container:
+
+```bash
+npm run docker:dev:up
+```
+
+Run database migrations against the local development database:
+
+```bash
+npm run db:migrate
+```
+
+### 2. Administrator seed
+
+The initial administrator account is created through an explicit, idempotent seed script.
+
+Required environment variables:
+
+- `ADMIN_NAME`: Full name of the administrator (at least 2 characters).
+- `ADMIN_EMAIL`: Valid email address for administrator login.
+- `ADMIN_PASSWORD`: Strong password (minimum 8 characters, containing letters and numbers/symbols).
+
+You can supply these variables inline or define them in `.env.local` (recommended for local development):
+
+```bash
+ADMIN_NAME="System Administrator" ADMIN_EMAIL="admin@merchantpulse.com" ADMIN_PASSWORD="ChooseAStrongPassword123!" npm run db:seed
+```
+
+Alternatively, use the targeted alias:
+
+```bash
+npm run db:seed:admin
+```
+
+> **Note:** The seed is idempotent. If an account with `ADMIN_EMAIL` already exists, the script will skip creation and leave existing credentials, roles, and settings untouched. The seed never runs automatically on application startup, migration, or build.
+
 ## Academic context
 
 Merchant Pulse is developed as a UNIVESP Projeto Integrador IV project for the Data Science and Computer Engineering tracks.
@@ -246,3 +292,264 @@ The use of synthetic and simulated data must be disclosed in technical documenta
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — Data entities, relationships, and metric semantics.
 - [`AGENTS.md`](AGENTS.md) — Instructions for AI coding agents.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — Implementation phases and completion criteria.
+
+```
+ecommerce-intelligence
+├─ .agents
+│  └─ skills
+│     ├─ frontend-developer
+│     │  └─ skill.md
+│     ├─ prisma-cli
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ agent-safety.md
+│     │     ├─ complete.md
+│     │     ├─ db-execute.md
+│     │     ├─ db-pull.md
+│     │     ├─ db-push.md
+│     │     ├─ db-seed.md
+│     │     ├─ debug.md
+│     │     ├─ dev.md
+│     │     ├─ format.md
+│     │     ├─ generate.md
+│     │     ├─ init.md
+│     │     ├─ mcp.md
+│     │     ├─ migrate-deploy.md
+│     │     ├─ migrate-dev.md
+│     │     ├─ migrate-diff.md
+│     │     ├─ migrate-reset.md
+│     │     ├─ migrate-resolve.md
+│     │     ├─ migrate-status.md
+│     │     ├─ studio.md
+│     │     └─ validate.md
+│     ├─ prisma-client-api
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ client-methods.md
+│     │     ├─ constructor.md
+│     │     ├─ filters.md
+│     │     ├─ model-queries.md
+│     │     ├─ query-options.md
+│     │     ├─ raw-queries.md
+│     │     ├─ relations.md
+│     │     └─ transactions.md
+│     ├─ prisma-compute
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ app-composer-setup.md
+│     │     ├─ app-framework-builds.md
+│     │     ├─ automation-create-prisma.md
+│     │     ├─ automation-rest-api.md
+│     │     ├─ cli-command-map.md
+│     │     ├─ debug-deploy-failures.md
+│     │     ├─ deploy-cli-and-ci.md
+│     │     ├─ deploy-existing-app.md
+│     │     ├─ deploy-on-push.md
+│     │     ├─ ops-services-and-config.md
+│     │     └─ runtime-requirements.md
+│     ├─ prisma-database-setup
+│     │  └─ SKILL.md
+│     ├─ prisma-driver-adapter-implementation
+│     │  └─ SKILL.md
+│     ├─ prisma-orm-setup
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ v6-mongodb.md
+│     │     ├─ v7-client-setup.md
+│     │     ├─ v7-cockroachdb.md
+│     │     ├─ v7-mysql.md
+│     │     ├─ v7-postgresql.md
+│     │     ├─ v7-prisma-postgres.md
+│     │     ├─ v7-sqlite.md
+│     │     └─ v7-sqlserver.md
+│     ├─ prisma-postgres
+│     │  └─ SKILL.md
+│     ├─ prisma-postgres-setup
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ operations.md
+│     │     ├─ provisioning.md
+│     │     └─ vercel-marketplace.md
+│     ├─ prisma-postgres-upgrade
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ adopt-schema-and-migrations.md
+│     │     ├─ client-api-mapping.md
+│     │     └─ verify-upgrade-checklist.md
+│     └─ prisma-upgrade-v7
+│        ├─ SKILL.md
+│        └─ references
+│           ├─ accelerate-users.md
+│           ├─ driver-adapters.md
+│           ├─ env-variables.md
+│           ├─ esm-support.md
+│           ├─ prisma-config.md
+│           ├─ removed-features.md
+│           └─ schema-changes.md
+├─ .claude
+│  └─ skills
+│     ├─ prisma-cli
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ agent-safety.md
+│     │     ├─ complete.md
+│     │     ├─ db-execute.md
+│     │     ├─ db-pull.md
+│     │     ├─ db-push.md
+│     │     ├─ db-seed.md
+│     │     ├─ debug.md
+│     │     ├─ dev.md
+│     │     ├─ format.md
+│     │     ├─ generate.md
+│     │     ├─ init.md
+│     │     ├─ mcp.md
+│     │     ├─ migrate-deploy.md
+│     │     ├─ migrate-dev.md
+│     │     ├─ migrate-diff.md
+│     │     ├─ migrate-reset.md
+│     │     ├─ migrate-resolve.md
+│     │     ├─ migrate-status.md
+│     │     ├─ studio.md
+│     │     └─ validate.md
+│     ├─ prisma-client-api
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ client-methods.md
+│     │     ├─ constructor.md
+│     │     ├─ filters.md
+│     │     ├─ model-queries.md
+│     │     ├─ query-options.md
+│     │     ├─ raw-queries.md
+│     │     ├─ relations.md
+│     │     └─ transactions.md
+│     ├─ prisma-compute
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ app-composer-setup.md
+│     │     ├─ app-framework-builds.md
+│     │     ├─ automation-create-prisma.md
+│     │     ├─ automation-rest-api.md
+│     │     ├─ cli-command-map.md
+│     │     ├─ debug-deploy-failures.md
+│     │     ├─ deploy-cli-and-ci.md
+│     │     ├─ deploy-existing-app.md
+│     │     ├─ deploy-on-push.md
+│     │     ├─ ops-services-and-config.md
+│     │     └─ runtime-requirements.md
+│     ├─ prisma-database-setup
+│     │  └─ SKILL.md
+│     ├─ prisma-driver-adapter-implementation
+│     │  └─ SKILL.md
+│     ├─ prisma-orm-setup
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ v6-mongodb.md
+│     │     ├─ v7-client-setup.md
+│     │     ├─ v7-cockroachdb.md
+│     │     ├─ v7-mysql.md
+│     │     ├─ v7-postgresql.md
+│     │     ├─ v7-prisma-postgres.md
+│     │     ├─ v7-sqlite.md
+│     │     └─ v7-sqlserver.md
+│     ├─ prisma-postgres
+│     │  └─ SKILL.md
+│     ├─ prisma-postgres-setup
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ operations.md
+│     │     ├─ provisioning.md
+│     │     └─ vercel-marketplace.md
+│     ├─ prisma-postgres-upgrade
+│     │  ├─ SKILL.md
+│     │  └─ references
+│     │     ├─ adopt-schema-and-migrations.md
+│     │     ├─ client-api-mapping.md
+│     │     └─ verify-upgrade-checklist.md
+│     └─ prisma-upgrade-v7
+│        ├─ SKILL.md
+│        └─ references
+│           ├─ accelerate-users.md
+│           ├─ driver-adapters.md
+│           ├─ env-variables.md
+│           ├─ esm-support.md
+│           ├─ prisma-config.md
+│           ├─ removed-features.md
+│           └─ schema-changes.md
+├─ .editorconfig
+├─ .nvmrc
+├─ .prettierignore
+├─ AGENTS.md
+├─ CLAUDE.md
+├─ README.md
+├─ commitlint.config.mjs
+├─ docs
+│  ├─ ARCHITECTURE.md
+│  ├─ DATA_MODEL.md
+│  ├─ DESIGN.md
+│  ├─ PROJECT_SPEC.md
+│  └─ ROADMAP.md
+├─ eslint.config.mjs
+├─ jest.config.js
+├─ jest.globalSetup.js
+├─ jest.setup.js
+├─ jsconfig.json
+├─ next.config.mjs
+├─ package-lock.json
+├─ package.json
+├─ prisma
+│  └─ schema.prisma
+├─ prisma.config.js
+├─ public
+├─ scripts
+│  ├─ seed-admin.js
+│  └─ seed.js
+├─ skills-lock.json
+└─ src
+   ├─ components
+   │  └─ dashboard
+   │     ├─ ActionableInsights.jsx
+   │     ├─ ConversionFunnel.jsx
+   │     ├─ Header.jsx
+   │     ├─ KpiCard.jsx
+   │     ├─ KpiGrid.jsx
+   │     ├─ PerformanceBanner.jsx
+   │     ├─ ProductTable.jsx
+   │     ├─ Sidebar.jsx
+   │     ├─ TemporalTrendChart.jsx
+   │     └─ dashboardData.jsx
+   ├─ infra
+   │  ├─ authentication.js
+   │  ├─ compose.yaml
+   │  ├─ controller.js
+   │  ├─ errors.js
+   │  ├─ password.js
+   │  ├─ prisma.cjs
+   │  ├─ prisma.js
+   │  ├─ session.js
+   │  └─ webserver.mjs
+   ├─ pages
+   │  ├─ _app.js
+   │  ├─ _document.js
+   │  ├─ api
+   │  │  └─ v1
+   │  │     ├─ auth
+   │  │     │  ├─ forgot-password
+   │  │     │  │  └─ index.js
+   │  │     │  ├─ reset-password
+   │  │     │  │  └─ index.js
+   │  │     │  └─ sessions
+   │  │     │     └─ index.js
+   │  │     └─ status
+   │  │        └─ index.js
+   │  ├─ components
+   │  │  └─ auth
+   │  │     └─ LoginForm.jsx
+   │  ├─ dashboard
+   │  │  └─ index.jsx
+   │  ├─ index.js
+   │  └─ login
+   │     └─ index.js
+   └─ styles
+      └─ globals.css
+
+```
