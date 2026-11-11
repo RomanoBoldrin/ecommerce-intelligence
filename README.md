@@ -293,6 +293,7 @@ The use of synthetic and simulated data must be disclosed in technical documenta
 - [`AGENTS.md`](AGENTS.md) — Instructions for AI coding agents.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — Implementation phases and completion criteria.
 
+
 ```
 ecommerce-intelligence
 ├─ .agents
@@ -478,6 +479,9 @@ ecommerce-intelligence
 ├─ .editorconfig
 ├─ .nvmrc
 ├─ .prettierignore
+├─ .swc
+│  └─ plugins
+│     └─ linux_x86_64_34.0.0
 ├─ AGENTS.md
 ├─ CLAUDE.md
 ├─ README.md
@@ -491,12 +495,17 @@ ecommerce-intelligence
 ├─ eslint.config.mjs
 ├─ jest.config.js
 ├─ jest.globalSetup.js
+├─ jest.resolver.js
 ├─ jest.setup.js
 ├─ jsconfig.json
 ├─ next.config.mjs
 ├─ package-lock.json
 ├─ package.json
 ├─ prisma
+│  ├─ migrations
+│  │  ├─ 20261110223139_init
+│  │  │  └─ migration.sql
+│  │  └─ migration_lock.toml
 │  └─ schema.prisma
 ├─ prisma.config.js
 ├─ public
@@ -506,6 +515,12 @@ ecommerce-intelligence
 ├─ skills-lock.json
 └─ src
    ├─ components
+   │  ├─ auth
+   │  │  ├─ AuthLayout.jsx
+   │  │  ├─ ForgotPasswordForm.jsx
+   │  │  ├─ LoginForm.jsx
+   │  │  ├─ ProtectedRoute.jsx
+   │  │  └─ ResetPasswordForm.jsx
    │  └─ dashboard
    │     ├─ ActionableInsights.jsx
    │     ├─ ConversionFunnel.jsx
@@ -517,12 +532,17 @@ ecommerce-intelligence
    │     ├─ Sidebar.jsx
    │     ├─ TemporalTrendChart.jsx
    │     └─ dashboardData.jsx
+   ├─ context
+   │  └─ AuthContext.js
    ├─ infra
    │  ├─ authentication.js
+   │  ├─ authorization.js
    │  ├─ compose.yaml
    │  ├─ controller.js
+   │  ├─ cookie.js
    │  ├─ errors.js
    │  ├─ password.js
+   │  ├─ passwordReset.js
    │  ├─ prisma.cjs
    │  ├─ prisma.js
    │  ├─ session.js
@@ -541,15 +561,37 @@ ecommerce-intelligence
    │  │     │     └─ index.js
    │  │     └─ status
    │  │        └─ index.js
-   │  ├─ components
-   │  │  └─ auth
-   │  │     └─ LoginForm.jsx
    │  ├─ dashboard
    │  │  └─ index.jsx
+   │  ├─ forgot-password
+   │  │  └─ index.jsx
    │  ├─ index.js
-   │  └─ login
-   │     └─ index.js
-   └─ styles
-      └─ globals.css
+   │  ├─ login
+   │  │  └─ index.jsx
+   │  └─ reset-password
+   │     └─ index.jsx
+   ├─ styles
+   │  └─ globals.css
+   └─ tests
+      ├─ integration
+      │  └─ api
+      │     └─ v1
+      │        └─ auth
+      │           ├─ forgot-password.test.js
+      │           ├─ reset-password.test.js
+      │           └─ sessions.test.js
+      ├─ orchestrator
+      │  └─ orchestrator.mjs
+      ├─ testHelpers.js
+      └─ unit
+         ├─ authorization.test.js
+         ├─ components
+         │  ├─ authContext.test.jsx
+         │  ├─ forgotPasswordForm.test.jsx
+         │  ├─ loginForm.test.jsx
+         │  ├─ protectedRoute.test.jsx
+         │  └─ resetPasswordForm.test.jsx
+         ├─ password.test.js
+         └─ session.test.js
 
 ```

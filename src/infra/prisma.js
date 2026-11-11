@@ -3,27 +3,6 @@
  * -----------------------
  * This file is responsible for creating and exporting a single shared instance
  * of PrismaClient across the entire application.
- *
- * Why this exists:
- * - Each PrismaClient instance maintains its own database connection pool.
- * - Creating multiple instances (e.g., on every request or file reload)
- *   can quickly exhaust the database's connection limit.
- *
- * How it works:
- * - In development, Next.js hot-reloads modules frequently, which can cause
- *   multiple PrismaClient instances to be created.
- * - To prevent this, we store the Prisma instance on `globalThis` and reuse it
- *   if it already exists.
- * - In production, modules are typically loaded once, so a single instance is
- *   naturally maintained.
- *
- * Usage:
- * - Import this `prisma` instance anywhere in the app instead of creating a new one.
- *
- *   import { prisma } from "@/infra/prisma.js";
- *
- * - TLDT: Do NOT call `new PrismaClient()` in other files. Thanks :P
- *
  */
 
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -36,16 +15,22 @@ if (!process.env.DATABASE_URL) {
 
 const globalForPrisma = globalThis;
 
+let pool = globalForPrisma.__prisma_pool;
+if (!pool) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+  globalForPrisma.__prisma_pool = pool;
+}
+
 /** @type {import('@prisma/client').PrismaClient} */
 export const prisma =
   globalForPrisma.__prisma ||
   new PrismaClient({
-    adapter: new PrismaPg(
-      new Pool({
-        connectionString: process.env.DATABASE_URL,
-      }),
-    ),
+    adapter: new PrismaPg(pool),
   });
+
+prisma.__pool = pool;
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.__prisma = prisma;

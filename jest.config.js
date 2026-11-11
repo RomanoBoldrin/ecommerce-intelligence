@@ -1,19 +1,29 @@
-const nextJest = require("next/jest");
+const path = require("path");
 
-const createJestConfig = nextJest({
-  dir: "./",
-});
-
-const customJestConfig = {
-  moduleDirectories: ["node_modules", "<rootDir>"],
+module.exports = {
   testEnvironment: "node",
+  moduleDirectories: ["node_modules", "<rootDir>"],
+  globals: {
+    AbortController: globalThis.AbortController,
+    AbortSignal: globalThis.AbortSignal,
+    crypto: globalThis.crypto,
+    TextEncoder: globalThis.TextEncoder,
+    TextDecoder: globalThis.TextDecoder,
+  },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   globalSetup: "<rootDir>/jest.globalSetup.js",
-
+  resolver: "<rootDir>/jest.resolver.js",
   moduleNameMapper: {
-    // Maps imports starting with "@/..." to the project's src directory
     "^@/(.*)$": "<rootDir>/src/$1",
   },
+  transform: {
+    "^.+\\.(js|jsx|ts|tsx|mjs)$": [
+      require.resolve("next/dist/build/swc/jest-transformer.js"),
+      {
+        pagesDir: path.resolve(__dirname, "src/pages"),
+        isEsmProject: false,
+      },
+    ],
+  },
+  transformIgnorePatterns: ["/node_modules/"],
 };
-
-module.exports = createJestConfig(customJestConfig);

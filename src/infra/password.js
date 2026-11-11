@@ -18,3 +18,4 @@ const password = {
 };
 
 export default password;
+export { hash, compare };
