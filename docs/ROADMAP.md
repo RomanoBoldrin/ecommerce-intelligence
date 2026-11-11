@@ -76,7 +76,6 @@ Implement the core database structure before generating large datasets.
 
 ### Tasks
 
-- Define `Store`.
 - Define `User`.
 - Define `AuthSession`.
 - Define `PasswordResetToken`.
@@ -99,8 +98,7 @@ Implement the core database structure before generating large datasets.
 ### Important decisions
 
 - Visitor sessions and authentication sessions must remain separate.
-- The initial deployment uses one store.
-- Store ownership is represented explicitly.
+- The application is single-store; there is no `Store` model.
 - Revenue eligibility is defined by order status.
 - Stock information is optional and read-only.
 - IoT telemetry remains separate from e-commerce navigation events.
@@ -109,7 +107,7 @@ Implement the core database structure before generating large datasets.
 
 - Prisma schema.
 - Database migrations.
-- Seed for the initial demonstration store and dashboard administrator.
+- Seed for the dashboard administrator.
 - Model-level tests or validation scripts.
 
 ### Completion criteria
@@ -350,7 +348,7 @@ Establish the application shell and secure dashboard access.
 - Implement hashed-token sessions.
 - Implement password-reset token handling.
 - Implement role-based authorization.
-- Enforce store scope in protected queries.
+- Enforce role permissions in protected queries.
 - Implement common API validation and error handling.
 - Add initial dashboard components.
 - Add global date and category filter foundations.
@@ -374,7 +372,7 @@ Administrative settings are initially restricted to ADMIN.
 
 ### Completion criteria
 
-Dashboard users can authenticate securely. Protected operations enforce role and store permissions server-side.
+Dashboard users can authenticate securely. Protected operations enforce role permissions server-side.
 
 ## 11. Phase 9 — E-commerce analytics modules
 

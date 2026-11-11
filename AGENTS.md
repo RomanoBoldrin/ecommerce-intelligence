@@ -139,7 +139,7 @@ Exclude:
 - `CANCELLED`
 - `RETURNED`
 
-Revenue is attributed to order creation date in the store timezone.
+Revenue is attributed to order creation date in the application timezone (`America/Sao_Paulo`).
 
 Do not count pending orders as revenue.
 
@@ -149,7 +149,7 @@ Do not use order count as an exact substitute for converted-session count unless
 
 - Views and cart additions come from navigation events.
 - Sales and product revenue come from eligible order items.
-- Product queries must respect store scope and date filters.
+- Product queries must respect the selected date filters.
 - Stock is read-only and optional.
 - Do not implement inventory movements or stock-management workflows.
 
@@ -187,8 +187,7 @@ Security requirements:
 - Make password-reset tokens expiring and single-use.
 - Check user activity state.
 - Enforce role permissions on the server.
-- Enforce store scope in protected operations.
-- Do not trust client-provided store IDs or role values.
+- Do not trust client-provided role or user-identity values; derive them from the authenticated session.
 
 Do not copy PI-II-specific entities, relations, or role values into Merchant Pulse.
 
@@ -206,7 +205,9 @@ Do not copy PI-II-specific entities, relations, or role values into Merchant Pul
 - Use parameterized SQL for analytical queries when Prisma's ordinary query interface is insufficient.
 - Never construct unsafe SQL from untrusted user input.
 
-The initial store relationship must remain simple. Do not build subscription management, tenant provisioning, or complex SaaS isolation unless the scope changes explicitly.
+Merchant Pulse is a single-store application. Do not introduce `Store`, `storeId`, tenant, organization, subscription, or multi-tenant isolation concepts unless the project scope changes explicitly.
+
+`DataSource` describes the logical origin of data (initially only the synthetic generator); CSV and Parquet are file formats, not sources. External identifiers are globally unique for the initial single-generator dataset. Independent external sources require source-scoped identity and deduplication before they are implemented.
 
 ## 9. Python data-science rules
 
@@ -349,7 +350,6 @@ Thresholds are configurable demonstration parameters, not certified safety limit
 - Validate query parameters.
 - Authenticate protected endpoints.
 - Authorize by role.
-- Enforce store scope.
 - Return consistent error responses.
 - Avoid exposing internal stack traces.
 - Do not log credentials, raw tokens, or sensitive identifiers.
@@ -381,7 +381,7 @@ Prioritize tests for:
 - Session conversion semantics.
 - Eligible revenue statuses.
 - Average order value.
-- Store scoping.
+- Role-based authorization of protected operations.
 - Authentication and authorization.
 - Import validation.
 - Deduplication.
@@ -420,7 +420,7 @@ A task is complete only when:
 - The implementation satisfies its documented requirement.
 - Relevant tests pass.
 - Data semantics remain consistent.
-- Security and store scope are respected.
+- Security and role permissions are respected.
 - Errors are handled.
 - Documentation is updated when necessary.
 - No synthetic or simulated result is misrepresented as real.

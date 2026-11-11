@@ -87,14 +87,14 @@ The Python workspace performs data-science operations. The Next.js application h
 
 ### Data science
 
-| Technology   | Responsibility                             |
-| ------------ | ------------------------------------------ |
-| Python       | Data-science workflows                     |
-| Pandas       | Tabular preprocessing and analysis         |
-| NumPy        | Numerical operations                       |
-| scikit-learn | Regression model and evaluation            |
-| CSV          | Interchange and initial generated datasets |
-| Parquet      | Optional efficient analytical storage      |
+| Technology   | Responsibility                               |
+| ------------ | -------------------------------------------- |
+| Python       | Data-science workflows                       |
+| Pandas       | Tabular preprocessing and analysis           |
+| NumPy        | Numerical operations                         |
+| scikit-learn | Regression model and evaluation              |
+| CSV          | Interchange format for the generated dataset |
+| Parquet      | Optional efficient analytical storage        |
 
 ### Testing
 
@@ -149,7 +149,7 @@ The exact component and route names may evolve, but feature-specific business lo
 - Receives client requests.
 - Authenticates users where required.
 - Validates input.
-- Applies authorization and store scope.
+- Applies authorization.
 - Calls domain and analytics functions.
 - Returns structured responses.
 
@@ -202,7 +202,7 @@ The generator and simulator should not depend on the Next.js application to prod
 ## 6. E-commerce data flow
 
 1. The generator creates products, sessions, events, orders, and order items.
-2. Generated data is written in batches to CSV or Parquet.
+2. Generated data is written in batches to CSV or Parquet. These are file formats of one logical source (the synthetic generator), not separate data sources.
 3. The preprocessing pipeline validates structure and content.
 4. Invalid records are rejected or corrected according to documented rules.
 5. Duplicate records are removed using stable deduplication keys.
@@ -376,12 +376,12 @@ The main analytical calculations should be centralized.
 
 - Navigation metrics may use events.
 - Sales and revenue metrics must use eligible orders and their items.
-- Product rankings must respect the selected period and store.
+- Product rankings must respect the selected period.
 - Do not imply stock-management functionality.
 
 ### Timezone
 
-The initial store timezone is `America/Sao_Paulo`. Store timestamps consistently and apply the configured timezone when grouping and displaying business dates.
+The application timezone is `America/Sao_Paulo`. Store timestamps consistently and apply the configured timezone when grouping and displaying business dates.
 
 ## 11. Authentication and authorization architecture
 
@@ -421,7 +421,7 @@ Use separate development and test database configurations. Production migrations
 
 - Validate all API input.
 - Enforce authentication and role permissions server-side.
-- Enforce store scope in queries.
+- Enforce role permissions in queries.
 - Hash passwords with an appropriate password-hashing algorithm.
 - Store hashes of session tokens and reset tokens.
 - Use secure cookie settings in production.
@@ -446,6 +446,5 @@ The following constraints apply to the initial implementation:
 - No unnecessary state-management dependency.
 - No inventory-management module.
 - No physical sensor requirement.
-- No claim that synthetic data represents actual company transactions.
 
 Any architectural expansion must be justified by a functional, academic, or measurable performance requirement.

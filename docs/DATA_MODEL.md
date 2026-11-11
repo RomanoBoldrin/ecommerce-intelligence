@@ -13,7 +13,7 @@ The data model supports four distinct concerns:
 3. Data imports and processing traceability.
 4. Simulated IoT devices and telemetry.
 
-The model is designed for an initial single-store demonstration while retaining a simple `Store` relationship. It does not implement a complex multi-tenant SaaS architecture.
+Merchant Pulse is a single-store application: it analyzes the data of one e-commerce business. The model has no `Store` entity, no `storeId` columns and no tenant concept. Business keys (SKU, external order ID, device code, ...) are globally unique.
 
 The model must distinguish visitor behavior from dashboard authentication. These are different domains and must never share the same session table.
 
@@ -21,14 +21,6 @@ The model must distinguish visitor behavior from dashboard authentication. These
 
 ```mermaid
 erDiagram
-    STORE ||--o{ USER : has
-    STORE ||--o{ CATEGORY : contains
-    STORE ||--o{ PRODUCT : offers
-    STORE ||--o{ VISITOR_SESSION : receives
-    STORE ||--o{ ORDER : records
-    STORE ||--o{ DATA_IMPORT : tracks
-    STORE ||--o{ IOT_DEVICE : operates
-
     USER ||--o{ AUTH_SESSION : opens
     USER ||--o{ PASSWORD_RESET_TOKEN : receives
 
@@ -46,8 +38,6 @@ erDiagram
 
     IOT_DEVICE ||--o{ IOT_READING : produces
 
-    STORE ||--o{ INDICATOR_TARGET : configures
-    STORE ||--o{ RECOMMENDATION : receives
 ```
 
 The diagram represents logical relationships. Optional relationships, uniqueness rules, and exact foreign-key behavior must be reflected in the Prisma schema.
@@ -87,9 +77,14 @@ enum ImportStatus {
 }
 
 enum DataSourceType {
-  CSV
-  API
   SYNTHETIC
+  EXTERNAL_EXPORT
+  API
+}
+
+enum DataFileFormat {
+  CSV
+  PARQUET
 }
 
 enum DeviceStatus {
@@ -115,24 +110,11 @@ Persisted enum values should be stable. Changes to their names or meanings requi
 
 ## 4. Core entities
 
-### 4.1 Store
+### 4.1 Application timezone
 
-Represents the e-commerce operation whose data is analyzed.
+There is no store entity. The business timezone is the application constant `America/Sao_Paulo` (configuration, not database state). Timestamps are stored as UTC instants (`timestamptz`); business dates for revenue, funnel cohorts and forecasts are derived in this timezone at query time.
 
-Suggested fields:
-
-| Field     | Type     | Notes                           |
-| --------- | -------- | ------------------------------- |
-| id        | UUID     | Primary key                     |
-| name      | String   | Store display name              |
-| timezone  | String   | Defaults to `America/Sao_Paulo` |
-| isActive  | Boolean  | Store availability              |
-| createdAt | DateTime | Creation timestamp              |
-| updatedAt | DateTime | Last update                     |
-
-The first deployment uses one demonstration store.
-
-Every store-owned analytical entity must be scoped to its store. Store identifiers must be derived from the authenticated user's authorization context, not trusted blindly from client input.
+Access control is based on the authenticated user's role. There is no per-store data isolation because there is only one store.
 
 ### 4.2 User
 
@@ -141,7 +123,6 @@ Represents a dashboard user.
 | Field        | Type     | Notes                           |
 | ------------ | -------- | ------------------------------- |
 | id           | UUID     | Primary key                     |
-| storeId      | UUID     | Store relationship              |
 | name         | String   | Display name                    |
 | email        | String   | Unique login identifier         |
 | passwordHash | String   | Never store plaintext passwords |
@@ -200,7 +181,6 @@ Represents a product category.
 | Field       | Type     | Notes                |
 | ----------- | -------- | -------------------- |
 | id          | UUID     | Primary key          |
-| storeId     | UUID     | Store relationship   |
 | name        | String   | Category name        |
 | description | String?  | Optional description |
 | createdAt   | DateTime | Creation timestamp   |
@@ -215,9 +195,8 @@ Represents a product in the analyzed catalog.
 | Field         | Type     | Notes                               |
 | ------------- | -------- | ----------------------------------- |
 | id            | UUID     | Primary key                         |
-| storeId       | UUID     | Store relationship                  |
 | categoryId    | UUID     | Category relationship               |
-| sku           | String   | Store-scoped product code           |
+| sku           | String   | Globally unique product code        |
 | name          | String   | Product name                        |
 | price         | Decimal  | Product price                       |
 | isActive      | Boolean  | Product availability in the catalog |
@@ -225,7 +204,7 @@ Represents a product in the analyzed catalog.
 | createdAt     | DateTime | Creation timestamp                  |
 | updatedAt     | DateTime | Last update                         |
 
-A uniqueness constraint should prevent duplicate SKUs within the same store.
+`sku` is unique, preventing duplicate products.
 
 Stock values, if present, are historical or imported snapshots only. Merchant Pulse does not provide inventory operations.
 
@@ -238,7 +217,6 @@ It is not an authentication session.
 | Field         | Type     | Notes                                               |
 | ------------- | -------- | --------------------------------------------------- |
 | id            | UUID     | Internal primary key                                |
-| storeId       | UUID     | Store relationship                                  |
 | sessionHash   | String   | Pseudonymous external session identifier            |
 | customerHash  | String?  | Optional pseudonymous returning-customer identifier |
 | startedAt     | DateTime | Session start                                       |
@@ -248,7 +226,7 @@ It is not an authentication session.
 | dataImportId  | UUID?    | Import provenance                                   |
 | createdAt     | DateTime | Record creation                                     |
 
-Deduplication should use the store and stable external session identifier. If multiple source systems are supported, include the source identity in the uniqueness key.
+`externalSessionId` (the stable external session identifier) is unique. If multiple source systems are supported, include the source identity in the identifier.
 
 Do not store consumer names, emails, phone numbers, or full addresses.
 
@@ -261,7 +239,6 @@ Represents a navigation or purchase-journey event.
 | Field            | Type      | Notes                                   |
 | ---------------- | --------- | --------------------------------------- |
 | id               | UUID      | Primary key                             |
-| storeId          | UUID      | Store relationship                      |
 | visitorSessionId | UUID      | Visitor session                         |
 | productId        | UUID?     | Optional product                        |
 | eventType        | EventType | Five-stage event taxonomy               |
@@ -290,7 +267,6 @@ Represents a transaction recorded by the e-commerce source.
 | Field            | Type        | Notes                               |
 | ---------------- | ----------- | ----------------------------------- |
 | id               | UUID        | Primary key                         |
-| storeId          | UUID        | Store relationship                  |
 | visitorSessionId | UUID?       | Optional session attribution        |
 | externalOrderId  | String?     | Source order identifier             |
 | status           | OrderStatus | Transaction status                  |
@@ -301,7 +277,7 @@ Represents a transaction recorded by the e-commerce source.
 | totalAmount      | Decimal     | Final order total                   |
 | dataImportId     | UUID?       | Import provenance                   |
 
-A uniqueness constraint should prevent duplicate external orders within the same store and source scope.
+`externalOrderId` is unique. If multiple source systems are supported, include the source identity in the identifier.
 
 The order total must be validated against its components. The permitted relationship is:
 
@@ -329,30 +305,26 @@ The unit price should be retained as a transaction snapshot. Product catalog pri
 
 ### 4.11 DataSource
 
-Represents the origin or configuration of an imported dataset.
+Represents the **logical origin** of imported data: who produced it, not how the file is serialized.
 
-Suggested fields:
+Initial implementation: the database holds one `DataSource`, the reproducible Python synthetic-data generator (`type = SYNTHETIC`). CSV and Parquet are serialization formats of that generator's output; they are **not** separate sources and do not get separate `DataSource` rows.
 
-- id
-- storeId
-- name
-- type (`CSV`, `API`, `SYNTHETIC`)
-- configuration metadata where safe
-- createdAt
-- updatedAt
+Fields: `id`, `name` (unique), `type` (`SYNTHETIC`, `EXTERNAL_EXPORT`, `API`), `description`, `isActive`, `createdAt`, `updatedAt`.
 
-Do not store secrets in unencrypted configuration metadata.
+`EXTERNAL_EXPORT` (file exports from an external platform) and `API` are reserved for future independent sources and are not implemented. Do not store secrets in `DataSource` metadata.
 
 ### 4.12 DataImport
 
-Represents an import or processing run.
+Represents one import batch/execution of a data source, used for provenance and processing counts.
+
+The consolidated synthetic dataset is imported from CSV or Parquet files; `fileName` and `fileFormat` (`CSV` or `PARQUET`) describe the file of that run. Sessions, events and orders reference their batch through the optional `dataImportId` (`SetNull` on delete, so removing an import log never deletes business records).
 
 Suggested fields:
 
 - id
-- storeId
 - dataSourceId
 - status
+- fileName, fileFormat
 - startedAt
 - completedAt
 - recordsRead
@@ -367,6 +339,12 @@ Each import should be traceable to its source and processing result.
 
 Re-running the same import must not create duplicate sessions, events, or orders when stable source identifiers are available.
 
+#### Initial ingestion strategy and future multi-source extension
+
+- **Today:** one consolidated, reproducible synthetic dataset from one generator. External identifiers (`externalSessionId`, `externalOrderId`, `deduplicationKey`, `sku`, `deviceCode`) are **globally unique**, and the generator must guarantee that. Deduplication relies on those unique constraints, not on the import run.
+- **Not implemented:** independent external sources (CSV exports from other platforms, API integrations). Two such sources may reuse the same identifiers, so the global constraints would wrongly collapse or reject their records.
+- **Required before supporting them:** add source-scoped identity (a `dataSourceId` on the externally identified records and composite unique keys such as `(dataSourceId, externalOrderId)`, or source-prefixed identifiers), define product/category matching across sources, and migrate existing rows to the synthetic source. This needs a migration and is deliberately deferred.
+
 ## 5. IoT entities
 
 IoT telemetry is a separate domain. It must not be inserted into the e-commerce `NavigationEvent` table.
@@ -378,7 +356,6 @@ Represents a simulated warehouse monitoring device.
 Suggested fields:
 
 - id
-- storeId
 - deviceCode
 - name
 - status
@@ -386,7 +363,7 @@ Suggested fields:
 - createdAt
 - updatedAt
 
-`deviceCode` must be unique within a store.
+`deviceCode` must be unique.
 
 ### 5.2 IoTReading
 
@@ -423,7 +400,6 @@ Stores configurable targets or thresholds for dashboard indicators.
 Suggested fields:
 
 - id
-- storeId
 - indicatorKey
 - targetValue
 - warningThreshold
@@ -440,7 +416,6 @@ Stores rule-based recommendations shown in the dashboard.
 Suggested fields:
 
 - id
-- storeId
 - indicatorKey
 - title
 - description
@@ -492,7 +467,7 @@ Exclude:
 - `CANCELLED`
 - `RETURNED`
 
-Revenue is attributed to the order creation date in the store timezone.
+Revenue is attributed to the order creation date in the application timezone (`America/Sao_Paulo`).
 
 Average order value:
 
@@ -559,11 +534,11 @@ Recommended deduplication keys:
 
 | Entity           | Key                                          |
 | ---------------- | -------------------------------------------- |
-| Product          | Store + SKU                                  |
-| Visitor session  | Store + source + external session ID         |
+| Product          | SKU                                          |
+| Visitor session  | External session ID                          |
 | Navigation event | Source event ID or deterministic fingerprint |
-| Order            | Store + source + external order ID           |
-| IoT device       | Store + device code                          |
+| Order            | External order ID                            |
+| IoT device       | Device code                                  |
 | IoT reading      | Device + timestamp + measurement type        |
 
 When source identifiers are unavailable, the fingerprint algorithm must be deterministic and documented.
@@ -574,12 +549,12 @@ Use database constraints for uniqueness and referential integrity wherever pract
 
 Initial indexes should support:
 
-- Store-scoped product and category lookups.
-- Visitor sessions by store and start time.
+- Product and category lookups.
+- Visitor sessions by start time.
 - Navigation events by session, type, and occurrence time.
-- Orders by store, status, and creation time.
+- Orders by status and creation time.
 - Order items by order and product.
-- Imports by store and creation time.
+- Imports by creation time and status.
 - IoT readings by device and measurement timestamp.
 - Authentication sessions by token hash, user, and expiration.
 
@@ -601,4 +576,35 @@ The collaborator's proposed SQL schema is a starting point, not an immutable con
 
 The initial implementation should avoid unnecessary dimensional tables or materialized views. A calendar dimension may be introduced if it materially improves the analytical workflow. Otherwise, PostgreSQL date operations are sufficient.
 
-Analytical queries must support the selected date range and store scope. Fixed-period views should not be used where the dashboard requires dynamic filters.
+Analytical queries must support the selected date range. Fixed-period views should not be used where the dashboard requires dynamic filters.
+
+## 15. Prisma implementation decisions (schema v2, single store)
+
+`prisma/schema.prisma` implements this model (17 models, 9 enums) with these deliberate deviations from the suggestions above:
+
+| Topic             | Decision                                                                                                                                                                                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single store      | No `Store` model and no `storeId`. Natural keys are globally unique: `Category.name`, `Product.sku`, `VisitorSession.externalSessionId`, `NavigationEvent.deduplicationKey`, `Order.externalOrderId`, `DataSource.name`, `IoTDevice.deviceCode`, `IndicatorTarget.indicatorKey`. |
+| Timezone          | `America/Sao_Paulo` is an application constant, not a column.                                                                                                                                                                                                                    |
+| Event enum        | `NavigationEventType`: `SESSION_START`, `PRODUCT_VIEW`, `ADD_TO_CART`, `CHECKOUT_START`, `ORDER_COMPLETED` (replaces `EventType` `VISIT`/`CART_ADD`). Maps 1:1 to the five funnel stages.                                                                                        |
+| Other enum names  | `DataImportStatus` (was `ImportStatus`); `DeviceStatus`/`MeasurementType` replaced by `IoTDevice.isActive` and the single-row IoT reading design.                                                                                                                                |
+| Names             | `VisitorSession.externalSessionId`/`visitorHash` (was `sessionHash`/`customerHash`); `Order.discount`/`total`; `NavigationEvent.deduplicationKey` (required, replaces `fingerprint`).                                                                                            |
+| Dedup scope       | Global unique keys, without source identity; valid because the initial dataset comes from one generator. Independent external sources need source-scoped identity first (§4.12).                                                                                                 |
+| Source vs. format | `DataSourceType` = logical origin (`SYNTHETIC`, `EXTERNAL_EXPORT`, `API`); `DataFileFormat` (`CSV`, `PARQUET`) is stored on `DataImport.fileFormat`.                                                                                                                             |
+| IoT reading       | One row per device and `recordedAt` with temperature, humidity and energy. Unique `(deviceId, recordedAt)`. Data is simulated.                                                                                                                                                   |
+| Thresholds        | Stored in `IndicatorTarget` (`direction`, `warningThreshold`, `criticalThreshold`), compared at query time. Demonstration parameters, not safety limits.                                                                                                                         |
+| Forecasts         | `ForecastRun` and `DemandForecast` persist precomputed forecasts and test-set metrics (`Float`); not live inference.                                                                                                                                                             |
+| Order total       | `shippingAmount` retained from §4.9 (default 0).                                                                                                                                                                                                                                 |
+| Deferred          | `customerHash`, `stateCode`, `DataImport` counters (`recordsRead/Accepted/...`), `metadata` JSON.                                                                                                                                                                                |
+
+Foreign-key behavior: `AuthSession`, `PasswordResetToken` cascade from `User`; `OrderItem` cascades from `Order`; `NavigationEvent` cascades from `VisitorSession`; `DemandForecast` cascades from `ForecastRun`. `Product`, `Category`, `IoTDevice`, `DataSource` use `Restrict` so history is not silently deleted. Optional links (`Order.visitorSessionId`, `NavigationEvent.productId`, `dataImportId`) use `SetNull`.
+
+### Constraints Prisma cannot express (future raw-SQL migration, after approval)
+
+Add as `CHECK` constraints by editing the generated migration SQL before applying it:
+
+- `products.price >= 0`; `order_items.quantity > 0`; `order_items.unit_price >= 0`; `order_items.discount >= 0`.
+- `orders.subtotal/discount/shipping_amount/total >= 0`; `orders.discount <= orders.subtotal`; `orders.total = subtotal - discount + shipping_amount`.
+- `iot_readings.relative_humidity BETWEEN 0 AND 100`; `energy_consumption_kw >= 0`.
+- `visitor_sessions.ended_at >= started_at`; `password_reset_tokens.expires_at > created_at`.
+- Revenue eligibility and funnel ordering are query semantics, not constraints.
