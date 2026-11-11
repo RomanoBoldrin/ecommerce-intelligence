@@ -1,126 +1,126 @@
 ---
 name: Merchant Pulse Analytics
 colors:
-  surface: '#faf8ff'
-  surface-dim: '#d2d9f4'
-  surface-bright: '#faf8ff'
-  surface-container-lowest: '#ffffff'
-  surface-container-low: '#f2f3ff'
-  surface-container: '#eaedff'
-  surface-container-high: '#e2e7ff'
-  surface-container-highest: '#dae2fd'
-  on-surface: '#131b2e'
-  on-surface-variant: '#464555'
-  inverse-surface: '#283044'
-  inverse-on-surface: '#eef0ff'
-  outline: '#777587'
-  outline-variant: '#c7c4d8'
-  surface-tint: '#4d44e3'
-  primary: '#3525cd'
-  on-primary: '#ffffff'
-  primary-container: '#4f46e5'
-  on-primary-container: '#dad7ff'
-  inverse-primary: '#c3c0ff'
-  secondary: '#5b598c'
-  on-secondary: '#ffffff'
-  secondary-container: '#c7c3fe'
-  on-secondary-container: '#514f81'
-  tertiary: '#005338'
-  on-tertiary: '#ffffff'
-  tertiary-container: '#006e4b'
-  on-tertiary-container: '#67f4b7'
-  error: '#ba1a1a'
-  on-error: '#ffffff'
-  error-container: '#ffdad6'
-  on-error-container: '#93000a'
-  primary-fixed: '#e2dfff'
-  primary-fixed-dim: '#c3c0ff'
-  on-primary-fixed: '#0f0069'
-  on-primary-fixed-variant: '#3323cc'
-  secondary-fixed: '#e3dfff'
-  secondary-fixed-dim: '#c4c1fb'
-  on-secondary-fixed: '#181445'
-  on-secondary-fixed-variant: '#444173'
-  tertiary-fixed: '#6ffbbe'
-  tertiary-fixed-dim: '#4edea3'
-  on-tertiary-fixed: '#002113'
-  on-tertiary-fixed-variant: '#005236'
-  background: '#faf8ff'
-  on-background: '#131b2e'
-  surface-variant: '#dae2fd'
+  surface: "#faf8ff"
+  surface-dim: "#d2d9f4"
+  surface-bright: "#faf8ff"
+  surface-container-lowest: "#ffffff"
+  surface-container-low: "#f2f3ff"
+  surface-container: "#eaedff"
+  surface-container-high: "#e2e7ff"
+  surface-container-highest: "#dae2fd"
+  on-surface: "#131b2e"
+  on-surface-variant: "#464555"
+  inverse-surface: "#283044"
+  inverse-on-surface: "#eef0ff"
+  outline: "#777587"
+  outline-variant: "#c7c4d8"
+  surface-tint: "#4d44e3"
+  primary: "#3525cd"
+  on-primary: "#ffffff"
+  primary-container: "#4f46e5"
+  on-primary-container: "#dad7ff"
+  inverse-primary: "#c3c0ff"
+  secondary: "#5b598c"
+  on-secondary: "#ffffff"
+  secondary-container: "#c7c3fe"
+  on-secondary-container: "#514f81"
+  tertiary: "#005338"
+  on-tertiary: "#ffffff"
+  tertiary-container: "#006e4b"
+  on-tertiary-container: "#67f4b7"
+  error: "#ba1a1a"
+  on-error: "#ffffff"
+  error-container: "#ffdad6"
+  on-error-container: "#93000a"
+  primary-fixed: "#e2dfff"
+  primary-fixed-dim: "#c3c0ff"
+  on-primary-fixed: "#0f0069"
+  on-primary-fixed-variant: "#3323cc"
+  secondary-fixed: "#e3dfff"
+  secondary-fixed-dim: "#c4c1fb"
+  on-secondary-fixed: "#181445"
+  on-secondary-fixed-variant: "#444173"
+  tertiary-fixed: "#6ffbbe"
+  tertiary-fixed-dim: "#4edea3"
+  on-tertiary-fixed: "#002113"
+  on-tertiary-fixed-variant: "#005236"
+  background: "#faf8ff"
+  on-background: "#131b2e"
+  surface-variant: "#dae2fd"
 typography:
   headline-xl:
     fontFamily: Plus Jakarta Sans
     fontSize: 36px
-    fontWeight: '700'
+    fontWeight: "700"
     lineHeight: 44px
     letterSpacing: -0.02em
   headline-xl-mobile:
     fontFamily: Plus Jakarta Sans
     fontSize: 28px
-    fontWeight: '700'
+    fontWeight: "700"
     lineHeight: 36px
     letterSpacing: -0.01em
   headline-lg:
     fontFamily: Plus Jakarta Sans
     fontSize: 28px
-    fontWeight: '600'
+    fontWeight: "600"
     lineHeight: 36px
     letterSpacing: -0.02em
   headline-lg-mobile:
     fontFamily: Plus Jakarta Sans
     fontSize: 22px
-    fontWeight: '600'
+    fontWeight: "600"
     lineHeight: 28px
     letterSpacing: -0.01em
   headline-md:
     fontFamily: Plus Jakarta Sans
     fontSize: 20px
-    fontWeight: '600'
+    fontWeight: "600"
     lineHeight: 28px
     letterSpacing: -0.01em
   headline-sm:
     fontFamily: Plus Jakarta Sans
     fontSize: 16px
-    fontWeight: '600'
+    fontWeight: "600"
     lineHeight: 24px
     letterSpacing: -0.005em
   metric-display:
     fontFamily: Plus Jakarta Sans
     fontSize: 32px
-    fontWeight: '700'
+    fontWeight: "700"
     lineHeight: 38px
     letterSpacing: -0.02em
   metric-display-sm:
     fontFamily: Plus Jakarta Sans
     fontSize: 24px
-    fontWeight: '600'
+    fontWeight: "600"
     lineHeight: 30px
     letterSpacing: -0.01em
   body-lg:
     fontFamily: Inter
     fontSize: 16px
-    fontWeight: '400'
+    fontWeight: "400"
     lineHeight: 24px
   body-md:
     fontFamily: Inter
     fontSize: 14px
-    fontWeight: '400'
+    fontWeight: "400"
     lineHeight: 20px
   body-sm:
     fontFamily: Inter
     fontSize: 12px
-    fontWeight: '400'
+    fontWeight: "400"
     lineHeight: 16px
   label-md:
     fontFamily: Inter
     fontSize: 13px
-    fontWeight: '500'
+    fontWeight: "500"
     lineHeight: 18px
   label-sm:
     fontFamily: Inter
     fontSize: 11px
-    fontWeight: '600'
+    fontWeight: "600"
     lineHeight: 14px
     letterSpacing: 0.02em
 rounded:
@@ -145,7 +145,7 @@ spacing:
 
 ## Brand & Style
 
-This design system serves independent e-commerce founders and merchant operators who need instant clarity over high-volume transactional data. The brand posture balances operational rigor with reassuring calm: it must feel as authoritative as an enterprise ERP, yet as intuitive and approachable as a consumer financial utility. 
+This design system serves independent e-commerce founders and merchant operators who need instant clarity over high-volume transactional data. The brand posture balances operational rigor with reassuring calm: it must feel as authoritative as an enterprise ERP, yet as intuitive and approachable as a consumer financial utility.
 
 The aesthetic is Modern Corporate with a precision-instrument feel. High data density is achieved without visual claustrophobia by strictly pairing structured card modules, generous micro-whitespace, and an intentional information hierarchy. Surfaces remain crisp and tactile, eliminating ornamental noise to let numerical trends, velocity indicators, and decision-support signals lead the interface.
 
@@ -199,15 +199,15 @@ The design system adopts a balanced roundedness profile to maintain a crisp soft
 ## Components
 
 - **Buttons:**
-  - *Primary:* Solid Indigo (`#4F46E5`) fill, pure white text, 8px radius, subtle hover shift to `#4338CA`. Active states produce an inner shadow.
-  - *Secondary / Neutral:* Crisp `#FFFFFF` surface with a 1px `#E2E8F0` border and `#0F172A` text. Hover shifts to `#F8FAFC`.
-  - *Destructive:* Rose-tinted subtle base (`#FFF1F2`) with `#E11D48` text for low-urgency actions, elevating to solid `#EF4444` fill for irreversible merchant actions.
+  - _Primary:_ Solid Indigo (`#4F46E5`) fill, pure white text, 8px radius, subtle hover shift to `#4338CA`. Active states produce an inner shadow.
+  - _Secondary / Neutral:_ Crisp `#FFFFFF` surface with a 1px `#E2E8F0` border and `#0F172A` text. Hover shifts to `#F8FAFC`.
+  - _Destructive:_ Rose-tinted subtle base (`#FFF1F2`) with `#E11D48` text for low-urgency actions, elevating to solid `#EF4444` fill for irreversible merchant actions.
 - **Telemetry Chips & Status Badges:**
-  - Designed as pill shapes (9999px) using semi-transparent backgrounds with deep colored text. 
-  - *Success (Revenue/Conversion):* Background `#ECFDF5`, text `#065F46`, paired with an upward-pointing micro icon.
-  - *Critical (Abandonment/Drop):* Background `#FFF1F2`, text `#9F1239`, paired with a downward trend icon.
-  - *Notice (Traffic/Visits):* Background `#EFF6FF`, text `#1E40AF`.
-  - *Warning (Inventory/SLA):* Background `#FFFBEB`, text `#92400E`.
+  - Designed as pill shapes (9999px) using semi-transparent backgrounds with deep colored text.
+  - _Success (Revenue/Conversion):_ Background `#ECFDF5`, text `#065F46`, paired with an upward-pointing micro icon.
+  - _Critical (Abandonment/Drop):_ Background `#FFF1F2`, text `#9F1239`, paired with a downward trend icon.
+  - _Notice (Traffic/Visits):_ Background `#EFF6FF`, text `#1E40AF`.
+  - _Warning (Inventory/SLA):_ Background `#FFFBEB`, text `#92400E`.
 - **Metric Cards (KPI Tiles):**
   - White surface, `rounded-lg`, 1px border (`#E2E8F0`).
   - Top row: 13px muted label (`#64748B`) left-aligned, actionable secondary menu right-aligned.
@@ -223,5 +223,5 @@ The design system adopts a balanced roundedness profile to maintain a crisp soft
   - Focused state applies a 2px outer ring in Indigo (`#4F46E5` at 20% opacity) and sets the border to `#4F46E5`.
   - Checkboxes use a 4px radius; checked state fills with Indigo `#4F46E5` displaying a white geometric check.
 - **Recommendation & Decision Support Cards:**
-  - Specialized cards delivering actionable insights (e.g., "Cart Abandonment Spike Detected"). 
+  - Specialized cards delivering actionable insights (e.g., "Cart Abandonment Spike Detected").
   - Features an accented 3px left border in the severity color (Amber, Coral, or Indigo), accompanied by a high-contrast action link to execute instant remediation.

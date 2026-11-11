@@ -44,7 +44,7 @@ Develop a computational solution based on data analysis to support the identific
 - Supervised category-level demand forecasting.
 - Interactive charts, filters, and exports.
 - Dashboard authentication and user management.
-- A simple store relationship in the data model.
+- A single-store data model with no store or tenant entity.
 
 ### 3.2 Excluded
 
@@ -60,7 +60,7 @@ Develop a computational solution based on data analysis to support the identific
 
 Stock values may be displayed as read-only snapshots if the input dataset contains them. Merchant Pulse does not manage stock or perform inventory transactions.
 
-The initial demonstration uses one store. Additional store records are supported by the model, but the first release does not require complex tenant provisioning or subscription management.
+Merchant Pulse analyzes the data of a single store. The model does not support multiple stores, tenant provisioning or subscription management.
 
 ## 4. Data sources and provenance
 
@@ -88,6 +88,8 @@ The initial target is approximately two years of simulated activity. Indicative 
 The generator must support a fixed random seed, configurable volume and date ranges, batch generation, and deterministic relationships between records.
 
 The dataset is synthetic and must be identified as such.
+
+The initial implementation uses one consolidated dataset from one logical data source: the Python generator (`DataSource` of type `SYNTHETIC`). CSV and Parquet are file formats used to serialize and import it, not separate sources. Independent external sources (exports from other platforms, API integrations) are out of scope for the first release; supporting them later requires source-scoped identity and deduplication (see `docs/DATA_MODEL.md`).
 
 ### 4.2 IoT telemetry
 
@@ -211,7 +213,7 @@ The following statuses are excluded:
 - `CANCELLED`
 - `RETURNED`
 
-Revenue is attributed to the order creation date, using the store's configured timezone.
+Revenue is attributed to the order creation date, using the application timezone (`America/Sao_Paulo`).
 
 Revenue and funnel conversion are separate analytical concepts. A session can generate multiple orders, and order creation may occur at a different time from session start. Therefore, the number of eligible orders must not be used as a direct substitute for the number of converted sessions.
 
@@ -400,7 +402,7 @@ Displays category-level forecasts, historical values, forecast horizons, model m
 
 ### Settings
 
-Manages dashboard users, store settings, data-source configuration, indicator targets, and thresholds. Administrative settings are restricted to the ADMIN role in the initial release.
+Manages dashboard users, application settings, data-source configuration, indicator targets, and thresholds. Administrative settings are restricted to the ADMIN role in the initial release.
 
 ## 11. Authentication and authorization
 
@@ -420,7 +422,7 @@ The authentication design follows the established approach used in the PI-II app
 - Sessions have expiration timestamps.
 - Password reset tokens have expiration and usage state.
 - User activity can be disabled.
-- Store scope is enforced in application queries.
+- Role permissions are enforced in application queries.
 
 Initial permissions:
 
@@ -432,7 +434,7 @@ Initial permissions:
 | Export reports                       |   Yes |          Yes |     Yes |
 | Manage data sources                  |   Yes |          Yes |      No |
 | Manage users                         |   Yes |           No |      No |
-| Change store settings                |   Yes |           No |      No |
+| Change application settings          |   Yes |           No |      No |
 | Change global targets and thresholds |   Yes | Configurable |      No |
 
 Permissions should be enforced server-side, not only by hiding interface elements.
